@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 
 const page = usePage<{
     flash: {
         success?: string;
     };
 }>();
+const deleteUser = (user: { id: number; name: string }) => {
+    if (!confirm(`${user.name} пайдаланушысын өшіруге сенімдісіз бе?`)) {
+        return;
+    }
 
+    router.delete(`/admin/users/${user.id}`, {
+        preserveScroll: true,
+    });
+};
 defineProps<{
     users: Array<{
         id: number;
@@ -62,12 +70,24 @@ defineProps<{
                         <td class="p-3">{{ user.role }}</td>
                         <td class="p-3">{{ user.email }}</td>
                         <td class="p-3">
-    <Link
-        :href="`/admin/users/${user.id}/edit`"
-        class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
-    >
-        Өңдеу
-    </Link>
+    <div class="flex items-center gap-2">
+        <Link
+            :href="`/admin/users/${user.id}/edit`"
+            class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+        >
+            Өңдеу
+        </Link>
+
+        <button
+            type="button"
+            :disabled="page.props.auth.user.id === user.id"
+            class="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+            @click="deleteUser(user)"
+        >
+            Өшіру
+        </button>
+    </div>
+       
 </td>
                     </tr>
                 </tbody>

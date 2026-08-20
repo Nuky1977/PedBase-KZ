@@ -97,4 +97,17 @@ if ($request->user()->is($user)) {
         ->route('admin.users.index')
         ->with('success', 'Пайдаланушы мәліметтері сәтті жаңартылды.');
 }
-}
+public function destroy(Request $request, User $user): RedirectResponse
+{
+    if ($request->user()->is($user)) {
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'Өз аккаунтыңызды өшіруге болмайды.');
+    }
+
+    $user->delete();
+
+    return redirect()
+        ->route('admin.users.index')
+        ->with('success', 'Пайдаланушы сәтті өшірілді.');
+}}

@@ -93,3 +93,39 @@ test('admin cannot change own role to teacher', function () {
 
     expect($admin->role)->toBe('admin');
 });
+test('admin can delete a teacher', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+    ]);
+
+    $teacher = User::factory()->create([
+        'role' => 'teacher',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->delete(route('admin.users.destroy', $teacher));
+
+    $response->assertRedirect(route('admin.users.index'));
+
+    $this->assertDatabaseMissing('users', [
+        'id' => $teacher->id,
+    ]);
+});
+
+test('admin cannot delete own account', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->delete(route('admin.users.destroy', $admin));
+
+    $response->assertRedirect(route('admin.users.index'));
+
+    $this->assertDatabaseHas('users', [
+        'id' => $admin->id,
+        'role' => 'admin',
+    ]);
+});
