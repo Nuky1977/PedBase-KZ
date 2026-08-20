@@ -53,4 +53,48 @@ public function create(): Response
     return redirect()
         ->route('admin.users.index')
         ->with('success', 'Пайдаланушы сәтті қосылды.');
-} }
+}
+
+public function edit(Request $request, User $user): Response
+{
+    return Inertia::render('admin/EditUser', [
+        'user' => $user->only([
+            'id',
+            'name',
+            'username',
+            'email',
+            'role',
+        ]),
+        'isSelf' => $request->user()->is($user),
+    ]);
+}
+public function update(Request $request, User $user): RedirectResponse
+{
+    $validated = $request->validate([
+        
+    'name' => ['required', 'string', 'max:255'],
+        'username' => [
+            'required',
+            'string',
+            'max:100',
+            'alpha_dash',
+            Rule::unique('users', 'username')->ignore($user->id),
+        ],
+        'email' => [
+            'required',
+            'email',
+            'max:255',
+            Rule::unique('users', 'email')->ignore($user->id),
+        ],
+        'role' => ['required', Rule::in(['admin', 'teacher'])],
+    ]);
+if ($request->user()->is($user)) {
+    $validated['role'] = $user->role;
+}
+    $user->update($validated);
+
+    return redirect()
+        ->route('admin.users.index')
+        ->with('success', 'Пайдаланушы мәліметтері сәтті жаңартылды.');
+}
+}

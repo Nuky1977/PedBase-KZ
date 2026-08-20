@@ -47,3 +47,49 @@ test('teacher cannot create users', function () {
         'username' => 'unauthorized_user',
     ]);
 });
+test('admin can update a teacher', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+    ]);
+
+    $teacher = User::factory()->create([
+        'role' => 'teacher',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->put(route('admin.users.update', $teacher), [
+            'name' => 'Updated Teacher',
+            'username' => $teacher->username,
+            'email' => $teacher->email,
+            'role' => 'teacher',
+        ]);
+
+    $response->assertRedirect(route('admin.users.index'));
+
+    $this->assertDatabaseHas('users', [
+        'id' => $teacher->id,
+        'name' => 'Updated Teacher',
+        'role' => 'teacher',
+    ]);
+});
+test('admin cannot change own role to teacher', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->put(route('admin.users.update', $admin), [
+            'name' => $admin->name,
+            'username' => $admin->username,
+            'email' => $admin->email,
+            'role' => 'teacher',
+        ]);
+
+    $response->assertRedirect(route('admin.users.index'));
+
+    $admin->refresh();
+
+    expect($admin->role)->toBe('admin');
+});

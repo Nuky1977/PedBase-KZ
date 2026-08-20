@@ -15,6 +15,15 @@ Route::middleware(['auth', 'admin'])
     Route::middleware(['auth', 'admin'])
     ->get('/admin/users/create', [UserController::class, 'create'])
     ->name('admin.users.create');
-    Route::middleware(['auth', 'admin'])
+
+Route::middleware(['auth', 'admin'])
     ->post('/admin/users', [UserController::class, 'store'])
     ->name('admin.users.store');
+
+Route::middleware(['auth', 'admin'])
+    ->get('/admin/users/{user}/edit', [UserController::class, 'edit'])
+    ->name('admin.users.edit');
+
+Route::middleware(['auth', 'admin'])
+    ->put('/admin/users/{user}', [UserController::class, 'update'])
+    ->name('admin.users.update');

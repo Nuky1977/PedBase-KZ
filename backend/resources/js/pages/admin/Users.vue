@@ -61,6 +61,14 @@ defineProps<{
                         <td class="p-3">{{ user.username }}</td>
                         <td class="p-3">{{ user.role }}</td>
                         <td class="p-3">{{ user.email }}</td>
+                        <td class="p-3">
+    <Link
+        :href="`/admin/users/${user.id}/edit`"
+        class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+    >
+        Өңдеу
+    </Link>
+</td>
                     </tr>
                 </tbody>
             </table>
