@@ -13,9 +13,9 @@ import { request } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Log in to your account',
-        description: 'Enter your email and password below to log in',
-    },
+    title: 'PedBase KZ жүйесіне кіру',
+    description: 'Логин мен құпия сөзіңізді енгізіңіз',
+},
 });
 
 defineProps<{
@@ -42,18 +42,18 @@ defineProps<{
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    required
-                    autofocus
-                    :tabindex="1"
-                    autocomplete="email"
-                    placeholder="email@example.com"
-                />
-                <InputError :message="errors.email" />
+                <Label for="username">Логин</Label>
+<Input
+    id="username"
+    type="text"
+    name="username"
+    required
+    autofocus
+    :tabindex="1"
+    autocomplete="username"
+    placeholder="zeynelkhan_nurlan_1"
+/>
+<InputError :message="errors.username" />
             </div>
 
             <div class="grid gap-2">
