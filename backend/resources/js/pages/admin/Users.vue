@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+
+const page = usePage<{
+    flash: {
+        success?: string;
+    };
+}>();
 
 defineProps<{
     users: Array<{
@@ -16,10 +22,24 @@ defineProps<{
     <Head title="Пайдаланушылар" />
 
     <div class="p-8">
-        <h1 class="mb-6 text-2xl font-bold">
-            PedBase KZ — Пайдаланушылар
-        </h1>
+        <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold">
+        PedBase KZ — Пайдаланушылар
+    </h1>
 
+    <Link
+        href="/admin/users/create"
+        class="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
+    >
+        + Пайдаланушы қосу
+    </Link>
+</div>
+<div
+    v-if="page.props.flash?.success"
+    class="mb-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-700"
+>
+    {{ page.props.flash.success }}
+</div>
         <div class="overflow-hidden rounded-lg border">
             <table class="w-full">
                 <thead class="bg-gray-50">

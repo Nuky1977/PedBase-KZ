@@ -3,7 +3,7 @@
 use App\Models\User;
 
 test('guest cannot access admin page', function () {
-    $response = $this->get('/admin');
+   $response = $this->get('/admin/users');
 
     $response->assertRedirect(route('login'));
 });
@@ -15,7 +15,7 @@ test('teacher cannot access admin page', function () {
 
     $response = $this
         ->actingAs($teacher)
-        ->get('/admin');
+        ->get('/admin/users');
 
     $response->assertForbidden();
 });
@@ -27,8 +27,8 @@ test('admin can access admin page', function () {
 
     $response = $this
         ->actingAs($admin)
-        ->get('/admin');
+        ->get('/admin/users');
 
     $response->assertOk();
-    $response->assertSee('PedBase KZ — Admin панелі жұмыс істейді!');
+    $response->assertSee('PedBase KZ');
 });
