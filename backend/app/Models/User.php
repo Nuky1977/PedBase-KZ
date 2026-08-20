@@ -34,9 +34,14 @@ class User extends Authenticatable
     protected $fillable = [
     'name',
     'username',
+    'role',
     'email',
     'password',
 ];
+public function isAdmin(): bool
+{
+    return $this->role === 'admin';
+}
     /**
      * Get the attributes that should be cast.
      *
