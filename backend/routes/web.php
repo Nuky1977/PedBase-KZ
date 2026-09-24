@@ -40,3 +40,8 @@ Route::middleware(['auth', 'admin'])
         return \Inertia\Inertia::render('school-admin/Dashboard');
     })
     ->name('school-admin.dashboard');
+    Route::middleware(['auth', 'teacher'])
+    ->get('/teacher', function () {
+        return \Inertia\Inertia::render('teacher/Dashboard');
+    })
+    ->name('teacher.dashboard');

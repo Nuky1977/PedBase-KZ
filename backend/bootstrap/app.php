@@ -2,6 +2,7 @@
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\MethodistMiddleware;
 use App\Http\Middleware\SchoolAdminMiddleware;
+use App\Http\Middleware\TeacherMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     'admin' => AdminMiddleware::class,
     'methodist' => MethodistMiddleware::class,
     'school_admin' => SchoolAdminMiddleware::class,
+    'teacher' => TeacherMiddleware::class,
 ]);
         $middleware->web(append: [
             HandleAppearance::class,
