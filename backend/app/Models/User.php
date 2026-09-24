@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\UserRole;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,7 +40,7 @@ class User extends Authenticatable
 ];
 public function isAdmin(): bool
 {
-    return $this->role === 'admin';
+   return $this->role === UserRole::ADMIN;
 }
     /**
      * Get the attributes that should be cast.
@@ -48,10 +48,11 @@ public function isAdmin(): bool
      * @return array<string, string>
      */
     protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'role' => UserRole::class,
+    ];
+}
 }

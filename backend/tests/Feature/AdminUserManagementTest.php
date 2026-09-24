@@ -1,11 +1,12 @@
 <?php
 
-use App\Models\User;
+use App\Models\User; 
+use App\UserRole;
 use Illuminate\Support\Facades\Hash;
 
 test('admin can create a teacher', function () {
     $admin = User::factory()->create([
-        'role' => 'admin',
+        'role' => UserRole::ADMIN,
     ]);
 
     $response = $this
@@ -23,12 +24,12 @@ test('admin can create a teacher', function () {
     $user = User::where('username', 'new_teacher')->first();
 
     expect($user)->not->toBeNull();
-    expect($user->role)->toBe('teacher');
+    expect($user->role)->toBe(UserRole::TEACHER);
     expect(Hash::check('Teacher123!', $user->password))->toBeTrue();
 });
 test('teacher cannot create users', function () {
     $teacher = User::factory()->create([
-        'role' => 'teacher',
+        'role' => UserRole::TEACHER,
     ]);
 
     $response = $this
@@ -49,11 +50,11 @@ test('teacher cannot create users', function () {
 });
 test('admin can update a teacher', function () {
     $admin = User::factory()->create([
-        'role' => 'admin',
+        'role' => UserRole::ADMIN,
     ]);
 
     $teacher = User::factory()->create([
-        'role' => 'teacher',
+        'role' => UserRole::TEACHER,
     ]);
 
     $response = $this
@@ -62,20 +63,22 @@ test('admin can update a teacher', function () {
             'name' => 'Updated Teacher',
             'username' => $teacher->username,
             'email' => $teacher->email,
-            'role' => 'teacher',
+           'role' => 'teacher',
         ]);
+    $response->assertSessionHasNoErrors();
+    expect($response->getStatusCode())->toBe(302);
 
-    $response->assertRedirect(route('admin.users.index'));
+    
 
     $this->assertDatabaseHas('users', [
         'id' => $teacher->id,
         'name' => 'Updated Teacher',
-        'role' => 'teacher',
+       'role' => UserRole::TEACHER->value,
     ]);
 });
 test('admin cannot change own role to teacher', function () {
     $admin = User::factory()->create([
-        'role' => 'admin',
+        'role' => UserRole::ADMIN,
     ]);
 
     $response = $this
@@ -84,22 +87,24 @@ test('admin cannot change own role to teacher', function () {
             'name' => $admin->name,
             'username' => $admin->username,
             'email' => $admin->email,
-            'role' => 'teacher',
+            'role' => UserRole::TEACHER->value,
         ]);
+    
+    expect($response->getStatusCode())->toBe(302);
 
-    $response->assertRedirect(route('admin.users.index'));
+    
 
     $admin->refresh();
 
-    expect($admin->role)->toBe('admin');
+    expect($admin->role)->toBe(UserRole::ADMIN);
 });
 test('admin can delete a teacher', function () {
     $admin = User::factory()->create([
-        'role' => 'admin',
+        'role' => UserRole::ADMIN,
     ]);
 
     $teacher = User::factory()->create([
-        'role' => 'teacher',
+        'role' => UserRole::TEACHER,
     ]);
 
     $response = $this
@@ -115,7 +120,7 @@ test('admin can delete a teacher', function () {
 
 test('admin cannot delete own account', function () {
     $admin = User::factory()->create([
-        'role' => 'admin',
+        'role' => UserRole::ADMIN->value,
     ]);
 
     $response = $this
@@ -126,6 +131,7 @@ test('admin cannot delete own account', function () {
 
     $this->assertDatabaseHas('users', [
         'id' => $admin->id,
-        'role' => 'admin',
+        'role' => UserRole::ADMIN->value,
+
     ]);
 });

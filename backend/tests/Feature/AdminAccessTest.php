@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-
+use Inertia\Testing\AssertableInertia as Assert;
 test('guest cannot access admin page', function () {
    $response = $this->get('/admin/users');
 
@@ -30,5 +30,9 @@ test('admin can access admin page', function () {
         ->get('/admin/users');
 
     $response->assertOk();
-    $response->assertSee('PedBase KZ');
+
+$response->assertInertia(fn (Assert $page) => $page
+    ->component('admin/Users')
+    ->has('users')
+);
 });

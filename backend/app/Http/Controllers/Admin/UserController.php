@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\UserRole;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -42,7 +43,7 @@ public function create(): Response
             'max:255',
             Rule::unique('users', 'email'),
         ],
-        'role' => ['required', Rule::in(['admin', 'teacher'])],
+        'role' => ['required', Rule::enum(UserRole::class)],
         'password' => ['required', 'string', 'min:8'],
     ]);
 
@@ -86,10 +87,10 @@ public function update(Request $request, User $user): RedirectResponse
             'max:255',
             Rule::unique('users', 'email')->ignore($user->id),
         ],
-        'role' => ['required', Rule::in(['admin', 'teacher'])],
+        'role' => ['required', Rule::enum(UserRole::class)],
     ]);
 if ($request->user()->is($user)) {
-    $validated['role'] = $user->role;
+    $validated['role'] = $user->role->value;
 }
     $user->update($validated);
 
