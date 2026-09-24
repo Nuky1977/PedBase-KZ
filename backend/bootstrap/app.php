@@ -1,6 +1,7 @@
 <?php
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\MethodistMiddleware;
+use App\Http\Middleware\SchoolAdminMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
     'admin' => AdminMiddleware::class,
     'methodist' => MethodistMiddleware::class,
+    'school_admin' => SchoolAdminMiddleware::class,
 ]);
         $middleware->web(append: [
             HandleAppearance::class,
@@ -32,8 +34,3 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
-Route::middleware(['auth', 'methodist'])
-    ->get('/methodist', function () {
-        return 'PedBase KZ — Әдіскер кабинеті жұмыс істейді!';
-    })
-    ->name('methodist.dashboard');
