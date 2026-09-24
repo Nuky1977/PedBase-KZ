@@ -4,6 +4,7 @@ namespace App\Models;
 use App\UserRole;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,14 +41,22 @@ class User extends Authenticatable
 ];
 public function isAdmin(): bool
 {
-   return $this->role === UserRole::ADMIN;
+    return $this->role === UserRole::ADMIN;
 }
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+
+public function schools(): BelongsToMany
+{
+    return $this->belongsToMany(School::class)
+        ->withPivot('is_primary')
+        ->withTimestamps();
+}
+
+/**
+ * Get the attributes that should be cast.
+ *
+ * @return array<string, string>
+ */
+protected function casts(): array
 {
     return [
         'email_verified_at' => 'datetime',
