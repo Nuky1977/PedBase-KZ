@@ -1,5 +1,6 @@
 <?php
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\MethodistMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -17,8 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->alias([
-            'admin' => AdminMiddleware::class,
-    ]);
+    'admin' => AdminMiddleware::class,
+    'methodist' => MethodistMiddleware::class,
+]);
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
@@ -30,3 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
+Route::middleware(['auth', 'methodist'])
+    ->get('/methodist', function () {
+        return 'PedBase KZ — Әдіскер кабинеті жұмыс істейді!';
+    })
+    ->name('methodist.dashboard');

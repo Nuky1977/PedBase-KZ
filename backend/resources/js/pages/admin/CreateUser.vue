@@ -87,8 +87,10 @@ import { Form, Head } from '@inertiajs/vue3';
                     required
                     class="w-full rounded-md border p-2"
                 >
-                    <option value="teacher">Мұғалім</option>
-                    <option value="admin">Әкімші</option>
+                    <option value="teacher">Педагог</option>
+                    <option value="school_admin">Мектеп әкімшісі</option>
+                    <option value="methodist">Әдіскер</option>
+                    <option value="admin">Жүйе әкімшісі</option>
                 </select>
 
                 <p v-if="errors.role" class="mt-1 text-sm text-red-600">

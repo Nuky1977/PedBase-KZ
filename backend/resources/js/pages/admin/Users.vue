@@ -6,6 +6,16 @@ const page = usePage<{
         success?: string;
     };
 }>();
+const roleLabel = (role: string): string => {
+    const labels: Record<string, string> = {
+        admin: 'Жүйе әкімшісі',
+        methodist: 'Әдіскер',
+        school_admin: 'Мектеп әкімшісі',
+        teacher: 'Педагог',
+    };
+
+    return labels[role] ?? role;
+};
 const deleteUser = (user: { id: number; name: string }) => {
     if (!confirm(`${user.name} пайдаланушысын өшіруге сенімдісіз бе?`)) {
         return;
@@ -67,7 +77,7 @@ defineProps<{
                     >
                         <td class="p-3">{{ user.name }}</td>
                         <td class="p-3">{{ user.username }}</td>
-                        <td class="p-3">{{ user.role }}</td>
+                       <td class="p-3">{{ roleLabel(user.role) }}</td>
                         <td class="p-3">{{ user.email }}</td>
                         <td class="p-3">
     <div class="flex items-center gap-2">

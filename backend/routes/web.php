@@ -30,3 +30,8 @@ Route::middleware(['auth', 'admin'])
     Route::middleware(['auth', 'admin'])
     ->delete('/admin/users/{user}', [UserController::class, 'destroy'])
     ->name('admin.users.destroy');
+    Route::middleware(['auth', 'methodist'])
+    ->get('/methodist', function () {
+        return \Inertia\Inertia::render('methodist/Dashboard');
+    })
+    ->name('methodist.dashboard');

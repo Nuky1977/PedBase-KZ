@@ -103,8 +103,10 @@ defineProps<{
     required
     class="w-full rounded-md border p-2 disabled:bg-gray-100 disabled:text-gray-500"
 >
-    <option value="teacher">Мұғалім</option>
-    <option value="admin">Әкімші</option>
+   <option value="teacher">Педагог</option>
+<option value="school_admin">Мектеп әкімшісі</option>
+<option value="methodist">Әдіскер</option>
+<option value="admin">Жүйе әкімшісі</option>
 </select>
 <input
     v-if="isSelf"
