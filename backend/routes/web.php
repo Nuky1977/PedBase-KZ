@@ -63,3 +63,21 @@ Route::middleware(['auth', 'admin'])
     Route::middleware(['auth', 'admin'])
     ->patch('/admin/schools/{school}/status', [SchoolController::class, 'toggleStatus'])
     ->name('admin.schools.toggle-status');
+    Route::middleware(['auth', 'admin'])
+    ->get('/admin/schools/{school}/teachers', [SchoolController::class, 'teachers'])
+    ->name('admin.schools.teachers');
+    Route::middleware(['auth', 'admin'])
+    ->post('/admin/schools/{school}/teachers', [SchoolController::class, 'attachTeacher'])
+    ->name('admin.schools.teachers.attach');
+    Route::middleware(['auth', 'admin'])
+    ->delete(
+        '/admin/schools/{school}/teachers/{teacher}',
+        [SchoolController::class, 'detachTeacher']
+    )
+    ->name('admin.schools.teachers.detach');
+    Route::middleware(['auth', 'admin'])
+    ->patch(
+        '/admin/schools/{school}/teachers/{teacher}/primary',
+        [SchoolController::class, 'makeTeacherPrimary']
+    )
+    ->name('admin.schools.teachers.primary');

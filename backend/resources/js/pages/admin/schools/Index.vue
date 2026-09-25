@@ -155,6 +155,12 @@ const toggleSchoolStatus = (school: School) => {
                             <td class="p-3">
                                 <div class="flex items-center gap-2">
                                     <Link
+    :href="`/admin/schools/${school.id}/teachers`"
+    class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+>
+    Педагогтар
+</Link>
+                                    <Link
                                         :href="`/admin/schools/${school.id}/edit`"
                                         class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
                                     >
