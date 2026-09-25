@@ -50,7 +50,24 @@ public function schools(): BelongsToMany
         ->withPivot('is_primary')
         ->withTimestamps();
 }
+public function setPrimarySchool(School $school): void
+{
+    if (! $this->schools()->whereKey($school->id)->exists()) {
+        $this->schools()->attach($school->id, [
+            'is_primary' => true,
+        ]);
+    }
 
+    $this->schools()->updateExistingPivot(
+        $this->schools()->pluck('schools.id')->all(),
+        ['is_primary' => false]
+    );
+
+    $this->schools()->updateExistingPivot(
+        $school->id,
+        ['is_primary' => true]
+    );
+}
 /**
  * Get the attributes that should be cast.
  *
