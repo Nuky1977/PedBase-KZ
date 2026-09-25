@@ -2,6 +2,7 @@
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Teacher\ProfileController;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -81,3 +82,9 @@ Route::middleware(['auth', 'admin'])
         [SchoolController::class, 'makeTeacherPrimary']
     )
     ->name('admin.schools.teachers.primary');
+    Route::middleware(['auth', 'teacher'])
+    ->get('/teacher/profile', [ProfileController::class, 'edit'])
+    ->name('teacher.profile.edit');
+    Route::middleware(['auth', 'teacher'])
+    ->put('/teacher/profile', [ProfileController::class, 'update'])
+    ->name('teacher.profile.update');
