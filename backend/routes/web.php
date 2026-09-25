@@ -1,7 +1,7 @@
 <?php
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Admin\SchoolController;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -45,3 +45,21 @@ Route::middleware(['auth', 'admin'])
         return \Inertia\Inertia::render('teacher/Dashboard');
     })
     ->name('teacher.dashboard');
+    Route::middleware(['auth', 'admin'])
+    ->get('/admin/schools', [SchoolController::class, 'index'])
+    ->name('admin.schools.index');
+    Route::middleware(['auth', 'admin'])
+    ->get('/admin/schools/create', [SchoolController::class, 'create'])
+    ->name('admin.schools.create');
+    Route::middleware(['auth', 'admin'])
+    ->post('/admin/schools', [SchoolController::class, 'store'])
+    ->name('admin.schools.store');
+    Route::middleware(['auth', 'admin'])
+    ->get('/admin/schools/{school}/edit', [SchoolController::class, 'edit'])
+    ->name('admin.schools.edit');
+    Route::middleware(['auth', 'admin'])
+    ->put('/admin/schools/{school}', [SchoolController::class, 'update'])
+    ->name('admin.schools.update');
+    Route::middleware(['auth', 'admin'])
+    ->patch('/admin/schools/{school}/status', [SchoolController::class, 'toggleStatus'])
+    ->name('admin.schools.toggle-status');
