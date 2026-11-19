@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, FolderGit2, LayoutGrid, School, Users } from '@lucide/vue';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,15 +16,32 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { dashboard as adminDashboard } from '@/routes/admin';
+import { index as schoolsIndex } from '@/routes/admin/schools';
+import { index as usersIndex } from '@/routes/admin/users';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
+const home = computed(() => (isAdmin.value ? adminDashboard() : dashboard()));
+
+const adminNavItems: NavItem[] = [
+    { title: 'Басқару панелі', href: adminDashboard(), icon: LayoutGrid },
+    { title: 'Пайдаланушылар', href: usersIndex(), icon: Users },
+    { title: 'Мектептер', href: schoolsIndex(), icon: School },
+];
+
+const defaultNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
 ];
+
+const mainNavItems = computed(() =>
+    isAdmin.value ? adminNavItems : defaultNavItems,
+);
 
 const footerNavItems: NavItem[] = [
     {
@@ -45,7 +63,7 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="home">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>

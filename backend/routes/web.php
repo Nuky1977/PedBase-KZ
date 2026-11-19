@@ -1,15 +1,27 @@
 <?php
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Teacher\ProfileController;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', function (Request $request) {
+        if ($request->user()->isAdmin()) {
+            return to_route('admin.dashboard');
+        }
+
+        return \Inertia\Inertia::render('Dashboard');
+    })->name('dashboard');
 });
 
 require __DIR__.'/settings.php';
+Route::middleware(['auth', 'admin'])
+    ->get('/admin', DashboardController::class)
+    ->name('admin.dashboard');
+
 Route::middleware(['auth', 'admin'])
     ->get('/admin/users', [UserController::class, 'index'])
     ->name('admin.users.index');
