@@ -10,6 +10,7 @@ use App\Http\Controllers\TeacherEmploymentController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\TeacherDossierController;
 use App\Http\Controllers\EducationReportController;
+use App\Http\Controllers\EducationOrganizationController;
 use App\UserRole;
 Route::inertia('/', 'Welcome')->name('home');
 
@@ -40,6 +41,13 @@ Route::middleware(['auth', 'admin'])->prefix('/admin/imports')->name('admin.impo
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/education-organizations', [EducationOrganizationController::class, 'index'])->name('education-organizations.index');
+    Route::get('/education-organizations/templates/{type}', [EducationOrganizationController::class, 'employmentTemplate'])
+        ->middleware('admin')->name('education-organizations.template');
+    Route::get('/education-organizations/{organization}', [EducationOrganizationController::class, 'show'])
+        ->whereNumber('organization')->name('education-organizations.show');
+    Route::get('/teacher/organization-employment', [EducationOrganizationController::class, 'employment'])->name('teacher.organization-employment');
+
     Route::get('/teacher/employment', [TeacherEmploymentController::class, 'mine'])->name('teacher.employment.index');
 
     Route::get('/organization', [OrganizationController::class, 'index'])->name('organization.index');

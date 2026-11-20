@@ -38,6 +38,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'educationCatalogEnabled' => config('pedbase.education_catalog_enabled'),
             'auth' => [
                 'user' => $request->user(),
             ],

@@ -29,8 +29,10 @@ import { index as importsIndex } from '@/routes/admin/imports';
 import { index as schoolsIndex } from '@/routes/admin/schools';
 import { index as usersIndex } from '@/routes/admin/users';
 import { show as dossier } from '@/routes/dossiers';
+import { index as educationCatalog } from '@/routes/education-organizations';
 import { index as organizations } from '@/routes/organization';
 import { index as reports } from '@/routes/reports';
+import { organizationEmployment } from '@/routes/teacher';
 import { index as myEmployment } from '@/routes/teacher/employment';
 import type { NavItem } from '@/types';
 
@@ -65,8 +67,18 @@ const teacherNavItems: NavItem[] = [
 ];
 
 const mainNavItems = computed(() => {
+    const catalogItem = page.props.educationCatalogEnabled
+        ? [
+              {
+                  title: 'Білім беру ұйымдары',
+                  href: educationCatalog(),
+                  icon: School,
+              },
+          ]
+        : [];
+
     if (isAdmin.value) {
-        return adminNavItems;
+        return [...adminNavItems, ...catalogItem];
     }
 
     const user = page.props.auth.user;
@@ -74,6 +86,15 @@ const mainNavItems = computed(() => {
     if (user?.role === 'teacher') {
         return [
             ...teacherNavItems,
+            ...(page.props.educationCatalogEnabled
+                ? [
+                      {
+                          title: 'Ұйымдардағы жұмыс орындарым',
+                          href: organizationEmployment(),
+                          icon: BriefcaseBusiness,
+                      },
+                  ]
+                : []),
             {
                 title: 'Менің жеке ісім',
                 href: dossier(user.id),
@@ -85,6 +106,7 @@ const mainNavItems = computed(() => {
     if (user?.role === 'school_admin' || user?.role === 'methodist') {
         return [
             { title: 'Ұйымдар', href: organizations(), icon: School },
+            ...catalogItem,
             { title: 'Есептер', href: reports(), icon: BookOpen },
         ];
     }
