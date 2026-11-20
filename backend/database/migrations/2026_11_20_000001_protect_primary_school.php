@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (DB::table('school_user')->where('is_primary', true)->groupBy('user_id')
+        if (DB::table('school_user')->select('user_id')->where('is_primary', true)->groupBy('user_id')
             ->havingRaw('COUNT(*) > 1')->exists()) {
             throw new RuntimeException('Resolve duplicate primary school assignments before applying this migration.');
         }
