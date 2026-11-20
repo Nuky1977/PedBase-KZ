@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditEvent;
+use App\Models\EducationOrganization;
 use App\Policies\EducationOrganizationScope;
 use App\Services\SpreadsheetExport;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -28,7 +33,10 @@ class EducationOrganizationController extends Controller
             'organizations' => $this->withDirectoryNames($catalog)
                 ->when($type !== null, fn (Builder $query) => $query->where('types.code', $type))
                 ->orderBy('education_organizations.name')->orderBy('education_organizations.id')
-                ->paginate(20)->withQueryString(),
+                ->paginate(20)->withQueryString()->through(fn (EducationOrganization $organization) => [
+                    ...$organization->toArray(),
+                    'status' => $organization->status(),
+                ]),
         ]);
     }
 
@@ -39,7 +47,31 @@ class EducationOrganizationController extends Controller
             ->addSelect('education_organizations.bin')->first();
         abort_if($entry === null, 403);
 
-        return Inertia::render('education-organizations/Show', ['organization' => $entry]);
+        return Inertia::render('education-organizations/Show', [
+            'organization' => [...$entry->toArray(), 'status' => $entry->status()],
+            'canUpdateStatus' => Gate::allows('updateStatus', EducationOrganization::class),
+        ]);
+    }
+
+    public function updateStatus(Request $request, int $organization): RedirectResponse
+    {
+        abort_unless(config('pedbase.education_catalog_enabled'), 404);
+        Gate::authorize('updateStatus', EducationOrganization::class);
+        $status = $request->validate(['status' => ['required', Rule::in(['active', 'inactive', 'archived'])]])['status'];
+
+        DB::transaction(function () use ($organization, $status) {
+            $entry = EducationOrganization::query()->lockForUpdate()->findOrFail($organization);
+            if ($entry->status() === $status) {
+                return;
+            }
+            $entry->forceFill([
+                'is_active' => $status === 'active',
+                'archived_at' => $status === 'archived' ? now() : null,
+            ])->save();
+            AuditEvent::record('organization.status.'.$status, 'education_organization', $entry->id);
+        }, 3);
+
+        return to_route('education-organizations.show', $organization);
     }
 
     public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export): BinaryFileResponse
@@ -77,10 +109,12 @@ class EducationOrganizationController extends Controller
                 ->on('p.user_id', '=', 'e.user_id')->on('p.organization_id', '=', 'e.organization_id'))
             ->where('e.user_id', $request->user()->id)
             ->select('e.id', 'o.name', 'e.position_title', 'e.status')
+            ->selectRaw('CASE WHEN o.archived_at IS NULL THEN 0 ELSE 1 END AS organization_archived')
             ->selectRaw('CASE WHEN p.user_id IS NULL THEN 0 ELSE 1 END AS is_primary')
             ->orderByDesc('is_primary')->orderBy('o.name')->orderBy('e.id')
             ->paginate(20)->through(function (object $employment): object {
                 $employment->is_primary = (bool) $employment->is_primary;
+                $employment->organization_archived = (bool) $employment->organization_archived;
 
                 return $employment;
             });
@@ -102,7 +136,7 @@ class EducationOrganizationController extends Controller
             ->join('education_areas as areas', 'areas.id', '=', 'education_organizations.area_id')
             ->join('education_regions as regions', 'regions.id', '=', 'areas.region_id')
             ->select('education_organizations.id', 'education_organizations.name', 'education_organizations.short_name',
-                'education_organizations.locality', 'education_organizations.is_active', 'types.name as type_name',
+                'education_organizations.locality', 'education_organizations.is_active', 'education_organizations.archived_at', 'types.name as type_name',
                 'areas.name as area_name', 'regions.name as region_name');
     }
 }

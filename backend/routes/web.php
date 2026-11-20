@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('admin')->name('education-organizations.template');
     Route::get('/education-organizations/{organization}', [EducationOrganizationController::class, 'show'])
         ->whereNumber('organization')->name('education-organizations.show');
+    Route::patch('/education-organizations/{organization}/status', [EducationOrganizationController::class, 'updateStatus'])
+        ->whereNumber('organization')->name('education-organizations.status');
     Route::get('/teacher/organization-employment', [EducationOrganizationController::class, 'employment'])->name('teacher.organization-employment');
 
     Route::get('/teacher/employment', [TeacherEmploymentController::class, 'mine'])->name('teacher.employment.index');

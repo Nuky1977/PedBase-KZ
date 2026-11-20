@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { index } from '@/routes/education-organizations';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Button } from '@/components/ui/button';
+import { index, status } from '@/routes/education-organizations';
 
-defineProps<{
+type Status = 'active' | 'inactive' | 'archived';
+
+const props = defineProps<{
+    canUpdateStatus: boolean;
     organization: {
+        id: number;
         name: string;
         short_name: string | null;
         type_name: string;
@@ -11,9 +16,20 @@ defineProps<{
         area_name: string;
         locality: string;
         bin: string;
-        is_active: boolean;
+        status: Status;
     };
 }>();
+
+const labels: Record<Status, string> = {
+    active: 'Белсенді',
+    inactive: 'Белсенді емес',
+    archived: 'Мұрағатталған',
+};
+const form = useForm({ status: props.organization.status });
+
+function saveStatus() {
+    form.patch(status.url(props.organization.id), { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -46,9 +62,51 @@ defineProps<{
             <div>
                 <dt class="text-sm text-muted-foreground">Мәртебесі</dt>
                 <dd>
-                    {{ organization.is_active ? 'Белсенді' : 'Белсенді емес' }}
+                    {{ labels[organization.status] }}
                 </dd>
             </div>
         </dl>
+        <form
+            v-if="canUpdateStatus"
+            class="space-y-2"
+            @submit.prevent="saveStatus"
+        >
+            <label class="block text-sm" for="organization-status"
+                >Жаңа мәртебе</label
+            >
+            <select
+                id="organization-status"
+                v-model="form.status"
+                class="rounded-md border bg-background p-2"
+                :disabled="form.processing"
+            >
+                <option
+                    v-for="(label, value) in labels"
+                    :key="value"
+                    :value="value"
+                >
+                    {{ label }}
+                </option>
+            </select>
+            <p
+                v-if="form.errors.status"
+                role="alert"
+                class="text-sm text-destructive"
+            >
+                {{ form.errors.status }}
+            </p>
+            <p
+                v-if="form.status === 'archived'"
+                class="text-sm text-muted-foreground"
+            >
+                Еңбек жазбалары мен тарихи деректер сақталады.
+            </p>
+            <Button
+                :disabled="
+                    form.processing || form.status === organization.status
+                "
+                >Мәртебені сақтау</Button
+            >
+        </form>
     </section>
 </template>

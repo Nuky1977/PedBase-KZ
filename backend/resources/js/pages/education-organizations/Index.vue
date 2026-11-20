@@ -15,7 +15,7 @@ defineProps<{
             region_name: string;
             area_name: string;
             locality: string;
-            is_active: boolean;
+            status: 'active' | 'inactive' | 'archived';
         }[];
         prev_page_url: string | null;
         next_page_url: string | null;
@@ -95,7 +95,13 @@ function filter(event: Event) {
                     {{ organization.area_name }} · {{ organization.locality }}
                 </p>
                 <p class="mt-2 text-sm">
-                    {{ organization.is_active ? 'Белсенді' : 'Белсенді емес' }}
+                    {{
+                        {
+                            active: 'Белсенді',
+                            inactive: 'Белсенді емес',
+                            archived: 'Мұрағатталған',
+                        }[organization.status]
+                    }}
                 </p>
             </li>
         </ul>

@@ -24,7 +24,7 @@ beforeEach(function () {
         CREATE TABLE education_organization_types (id INTEGER PRIMARY KEY, code TEXT, name TEXT);
         CREATE TABLE education_regions (id INTEGER PRIMARY KEY, name TEXT);
         CREATE TABLE education_areas (id INTEGER PRIMARY KEY, region_id INTEGER, name TEXT);
-        CREATE TABLE education_organizations (id INTEGER PRIMARY KEY, type_id INTEGER, area_id INTEGER, name TEXT, short_name TEXT, bin TEXT, locality TEXT, is_active INTEGER);
+        CREATE TABLE education_organizations (id INTEGER PRIMARY KEY, type_id INTEGER, area_id INTEGER, name TEXT, short_name TEXT, bin TEXT, locality TEXT, is_active INTEGER, archived_at TEXT DEFAULT NULL);
         CREATE TABLE education_organization_admins (user_id INTEGER, organization_id INTEGER);
         CREATE TABLE education_methodist_grants (user_id INTEGER, area_id INTEGER, type_id INTEGER);
         CREATE TABLE education_employments (id INTEGER PRIMARY KEY, user_id INTEGER, organization_id INTEGER, position_title TEXT, status TEXT);
@@ -32,7 +32,7 @@ beforeEach(function () {
         INSERT INTO education_organization_types VALUES (1, 'school', 'School'), (2, 'college', 'College');
         INSERT INTO education_regions VALUES (1, 'Region');
         INSERT INTO education_areas VALUES (1, 1, 'Area A'), (2, 1, 'Area B');
-        INSERT INTO education_organizations VALUES
+        INSERT INTO education_organizations (id, type_id, area_id, name, short_name, bin, locality, is_active) VALUES
             (1, 1, 1, 'School A', NULL, '000000000001', 'A', 1),
             (2, 2, 1, 'College A', NULL, '000000000002', 'A', 1),
             (3, 1, 2, 'School B', NULL, '000000000003', 'B', 1),

@@ -11,7 +11,16 @@ class EducationOrganization extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'archived_at' => 'datetime'];
+    }
+
+    public function status(): string
+    {
+        return match (true) {
+            $this->archived_at !== null => 'archived',
+            $this->is_active => 'active',
+            default => 'inactive',
+        };
     }
 
     public function legacySchool(): BelongsTo

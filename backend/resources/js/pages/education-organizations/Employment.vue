@@ -9,6 +9,7 @@ defineProps<{
             name: string;
             position_title: string | null;
             is_primary: boolean;
+            organization_archived: boolean;
             status: string;
         }[];
         prev_page_url: string | null;
@@ -49,6 +50,12 @@ defineProps<{
                             ? 'Белсенді'
                             : 'Белсенді емес'
                     }}
+                </p>
+                <p
+                    v-if="employment.organization_archived"
+                    class="text-sm text-muted-foreground"
+                >
+                    Ұйым мұрағатталған
                 </p>
             </li>
         </ul>
