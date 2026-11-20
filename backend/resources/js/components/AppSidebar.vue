@@ -46,7 +46,7 @@ const adminNavItems: NavItem[] = [
 
 const defaultNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Басты бет',
         href: dashboard(),
         icon: LayoutGrid,
     },
@@ -91,12 +91,12 @@ const mainNavItems = computed(() => {
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
+        title: 'Үлгі репозиторийі',
         href: 'https://github.com/laravel/vue-starter-kit',
         icon: FolderGit2,
     },
     {
-        title: 'Documentation',
+        title: 'Laravel құжаттамасы',
         href: 'https://laravel.com/docs/starter-kits#vue',
         icon: BookOpen,
     },
