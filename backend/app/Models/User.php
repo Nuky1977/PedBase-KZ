@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property string $name
@@ -54,23 +55,31 @@ public function teacherProfile(): HasOne
 {
     return $this->hasOne(TeacherProfile::class);
 }
-public function setPrimarySchool(School $school): void
-{
-    if (! $this->schools()->whereKey($school->id)->exists()) {
-        $this->schools()->attach($school->id, [
-            'is_primary' => true,
-        ]);
+
+    public function diplomas(): HasMany
+    {
+        return $this->hasMany(TeacherDiploma::class);
     }
 
-    $this->schools()->updateExistingPivot(
-        $this->schools()->pluck('schools.id')->all(),
-        ['is_primary' => false]
-    );
+    public function courses(): HasMany
+    {
+        return $this->hasMany(TeacherCourse::class);
+    }
 
-    $this->schools()->updateExistingPivot(
-        $school->id,
-        ['is_primary' => true]
-    );
+    public function attestations(): HasMany
+    {
+        return $this->hasMany(TeacherAttestation::class);
+    }
+public function setPrimarySchool(School $school): void
+{
+    $this->getConnection()->transaction(function () use ($school) {
+        self::query()->whereKey($this->getKey())->lockForUpdate()->firstOrFail();
+
+        $this->schools()->newPivotQuery()->where('is_primary', true)
+            ->update(['is_primary' => false, 'updated_at' => now()]);
+
+        $this->schools()->syncWithoutDetaching([$school->getKey() => ['is_primary' => true]]);
+    }, 3);
 }
 /**
  * Get the attributes that should be cast.

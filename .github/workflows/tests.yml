@@ -1,0 +1,101 @@
+name: Laravel and Vue CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      DB_URL: ''
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.3'
+          extensions: curl, dom, fileinfo, intl, mbstring, pdo_sqlite, sqlite3, xml, xmlwriter, zip, :pdo_mysql, :mysqli
+          tools: composer:v2
+          coverage: none
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Verify SQLite isolation
+        run: |
+          php -r '
+          if (getenv("APP_ENV") !== "testing" ||
+              getenv("DB_CONNECTION") !== "sqlite" ||
+              getenv("DB_DATABASE") !== ":memory:" ||
+              getenv("DB_URL") !== "" ||
+              in_array("mysql", PDO::getAvailableDrivers(), true)) {
+              exit(1);
+          }
+          new PDO("sqlite::memory:");
+          '
+
+      - name: Generate an ephemeral test key
+        run: |
+          key="$(php -r 'echo "base64:".base64_encode(random_bytes(32));')"
+          printf '::add-mask::%s\n' "$key"
+          printf 'APP_KEY=%s\n' "$key" >> "$GITHUB_ENV"
+
+      - name: Validate Composer configuration
+        run: composer validate --no-check-publish
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+
+      - name: Install NPM dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Generate Wayfinder routes
+        run: php artisan wayfinder:generate --with-form --skip-database --no-interaction
+
+      - name: Check TypeScript
+        run: npm run types:check
+
+      - name: Check ESLint
+        run: npm run lint:check -- --no-cache
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Run Pest tests
+        run: php artisan test --env=testing --do-not-cache-result
+
+      - name: Audit Composer dependencies
+        if: ${{ !cancelled() }}
+        run: composer audit --locked --no-interaction
+
+      - name: Audit production NPM dependencies
+        if: ${{ !cancelled() }}
+        run: npm audit --omit=dev
+
+      - name: Audit NPM dependencies including development tools
+        if: ${{ !cancelled() }}
+        # Report moderate development advisories and fail on high or critical.
+        run: npm audit --include=dev --audit-level=high

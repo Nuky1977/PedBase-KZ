@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        'teacher-documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/teacher-documents'),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

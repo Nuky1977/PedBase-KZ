@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class School extends Model
 {
     protected $fillable = [
@@ -21,6 +22,11 @@ public function users(): BelongsToMany
         ->withPivot('is_primary')
         ->withTimestamps();
 }
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
     protected function casts(): array
     {
         return [

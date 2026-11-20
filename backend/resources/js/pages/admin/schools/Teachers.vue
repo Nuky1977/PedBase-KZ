@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { school as schoolEmployment } from '@/routes/admin/employment';
 
 type School = {
     id: number;
@@ -88,12 +89,20 @@ const makeTeacherPrimary = (
                     </p>
                 </div>
 
-                <Link
-                    href="/admin/schools"
-                    class="rounded-md border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
-                >
-                    ← Мектептерге қайту
-                </Link>
+                <div class="flex flex-wrap gap-2">
+                    <Link
+                        :href="schoolEmployment(school.id)"
+                        class="rounded-md border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                    >
+                        Еңбек деректері
+                    </Link>
+                    <Link
+                        href="/admin/schools"
+                        class="rounded-md border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                    >
+                        ← Мектептерге қайту
+                    </Link>
+                </div>
             </div>
 
             <!-- Педагогты мектепке бекіту -->

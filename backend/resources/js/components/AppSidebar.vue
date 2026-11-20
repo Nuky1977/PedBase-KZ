@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid, School, Users } from '@lucide/vue';
+import {
+    BookOpen,
+    BriefcaseBusiness,
+    FolderGit2,
+    LayoutGrid,
+    School,
+    Users,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -19,6 +26,10 @@ import { dashboard } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as schoolsIndex } from '@/routes/admin/schools';
 import { index as usersIndex } from '@/routes/admin/users';
+import { show as dossier } from '@/routes/dossiers';
+import { index as organizations } from '@/routes/organization';
+import { index as reports } from '@/routes/reports';
+import { index as myEmployment } from '@/routes/teacher/employment';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -29,6 +40,8 @@ const adminNavItems: NavItem[] = [
     { title: 'Басқару панелі', href: adminDashboard(), icon: LayoutGrid },
     { title: 'Пайдаланушылар', href: usersIndex(), icon: Users },
     { title: 'Мектептер', href: schoolsIndex(), icon: School },
+    { title: 'Ұйымдар', href: organizations(), icon: School },
+    { title: 'Есептер', href: reports(), icon: BookOpen },
 ];
 
 const defaultNavItems: NavItem[] = [
@@ -39,9 +52,42 @@ const defaultNavItems: NavItem[] = [
     },
 ];
 
-const mainNavItems = computed(() =>
-    isAdmin.value ? adminNavItems : defaultNavItems,
-);
+const teacherNavItems: NavItem[] = [
+    ...defaultNavItems,
+    {
+        title: 'Менің еңбек деректерім',
+        href: myEmployment(),
+        icon: BriefcaseBusiness,
+    },
+];
+
+const mainNavItems = computed(() => {
+    if (isAdmin.value) {
+        return adminNavItems;
+    }
+
+    const user = page.props.auth.user;
+
+    if (user?.role === 'teacher') {
+        return [
+            ...teacherNavItems,
+            {
+                title: 'Менің жеке ісім',
+                href: dossier(user.id),
+                icon: FolderGit2,
+            },
+        ];
+    }
+
+    if (user?.role === 'school_admin' || user?.role === 'methodist') {
+        return [
+            { title: 'Ұйымдар', href: organizations(), icon: School },
+            { title: 'Есептер', href: reports(), icon: BookOpen },
+        ];
+    }
+
+    return defaultNavItems;
+});
 
 const footerNavItems: NavItem[] = [
     {

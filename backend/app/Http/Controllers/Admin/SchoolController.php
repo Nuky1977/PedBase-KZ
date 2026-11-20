@@ -177,7 +177,8 @@ class SchoolController extends Controller
             ],
         ]);
 
-        $teacher = User::findOrFail($validated['teacher_id']);
+        return $school->getConnection()->transaction(function () use ($school, $validated) {
+        $teacher = User::query()->lockForUpdate()->findOrFail($validated['teacher_id']);
 
         if ($teacher->role !== UserRole::TEACHER) {
             abort(422, 'Таңдалған пайдаланушы педагог емес.');
@@ -203,10 +204,13 @@ class SchoolController extends Controller
         return redirect()
             ->route('admin.schools.teachers', $school)
             ->with('success', 'Педагог мектепке сәтті тіркелді.');
+        }, 3);
     }public function detachTeacher(
     School $school,
     User $teacher
 ): RedirectResponse {
+    return $school->getConnection()->transaction(function () use ($school, $teacher) {
+    User::query()->whereKey($teacher->id)->lockForUpdate()->firstOrFail();
     $schoolTeacher = $school->users()
         ->whereKey($teacher->id)
         ->first();
@@ -231,10 +235,13 @@ class SchoolController extends Controller
     return redirect()
         ->route('admin.schools.teachers', $school)
         ->with('success', 'Педагог мектептен сәтті ажыратылды.');
+    }, 3);
 }public function makeTeacherPrimary(
     School $school,
     User $teacher
 ): RedirectResponse {
+    return $school->getConnection()->transaction(function () use ($school, $teacher) {
+    $teacher = User::query()->lockForUpdate()->findOrFail($teacher->id);
     if ($teacher->role !== UserRole::TEACHER) {
         abort(422, 'Таңдалған пайдаланушы педагог емес.');
     }
@@ -248,5 +255,6 @@ class SchoolController extends Controller
     return redirect()
         ->route('admin.schools.teachers', $school)
         ->with('success', 'Мектеп педагогтің негізгі жұмыс орны ретінде белгіленді.');
+    }, 3);
 }
 }
