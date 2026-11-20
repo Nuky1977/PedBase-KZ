@@ -6,6 +6,7 @@ use App\Models\AuditEvent;
 use App\Models\EducationOrganization;
 use App\Policies\EducationOrganizationScope;
 use App\Services\EducationOrganizationRegistration;
+use App\Services\EducationWorkloadImport;
 use App\Services\SpreadsheetExport;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +52,8 @@ class EducationOrganizationController extends Controller
         return Inertia::render('education-organizations/Show', [
             'organization' => [...$entry->toArray(), 'status' => $entry->status()],
             'canUpdateStatus' => Gate::allows('updateStatus', EducationOrganization::class),
+            'canEdit' => $request->user()->isAdmin()
+                || ($request->user()->role === UserRole::SCHOOL_ADMIN && $entry->archived_at === null),
         ]);
     }
 
@@ -75,10 +78,18 @@ class EducationOrganizationController extends Controller
         return to_route('education-organizations.show', $organization);
     }
 
-    public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export, EducationOrganizationRegistration $registration): BinaryFileResponse
+    public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads): BinaryFileResponse
     {
         abort_unless(config('pedbase.education_catalog_enabled'), 404);
         abort_unless($request->user()->isAdmin(), 403);
+        if ($request->boolean('workload')) {
+            abort_unless(in_array($type, EducationWorkloadImport::TYPES, true), 404);
+
+            return response()->download($workloads->template($type, $export), "pedbase-education-{$type}-workload.xlsx", [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'private, no-store',
+            ])->deleteFileAfterSend(true);
+        }
         if ($request->boolean('registration')) {
             abort_unless(array_key_exists($type, EducationOrganizationRegistration::TYPES)
                 || DB::table('education_organization_types')->where('code', $type)->exists(), 404);

@@ -17,6 +17,7 @@ type Fields = {
 
 const props = defineProps<{
     organization: (Fields & { id: number }) | null;
+    identityEditable?: boolean;
     types: Reference[];
     regions: (Reference & { id: number })[];
     areas: (Reference & { region_id: number })[];
@@ -79,6 +80,7 @@ function submit() {
                 <input
                     v-model="form[key]"
                     :required="key !== 'short_name'"
+                    :readonly="key === 'bin' && identityEditable === false"
                     :maxlength="key === 'bin' ? 12 : 255"
                     :inputmode="key === 'bin' ? 'numeric' : undefined"
                     :pattern="key === 'bin' ? '[0-9]{12}' : undefined"
@@ -92,6 +94,7 @@ function submit() {
                 Ұйым түрі
                 <select
                     v-model="form.type_code"
+                    :disabled="identityEditable === false"
                     required
                     class="rounded-md border bg-background p-2"
                 >
@@ -112,6 +115,7 @@ function submit() {
                 Облыс
                 <select
                     v-model="form.region_code"
+                    :disabled="identityEditable === false"
                     required
                     class="rounded-md border bg-background p-2"
                     @change="form.area_code = ''"
@@ -134,7 +138,7 @@ function submit() {
                 <select
                     v-model="form.area_code"
                     required
-                    :disabled="!areas.length"
+                    :disabled="!areas.length || identityEditable === false"
                     class="rounded-md border bg-background p-2"
                 >
                     <option value="">Аумақты таңдаңыз</option>
@@ -154,6 +158,7 @@ function submit() {
                 Мәртебе
                 <select
                     v-model="form.status"
+                    :disabled="identityEditable === false"
                     class="rounded-md border bg-background p-2"
                 >
                     <option value="active">Белсенді</option>

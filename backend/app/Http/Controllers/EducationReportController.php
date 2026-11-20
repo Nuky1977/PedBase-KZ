@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\EducationReportRequest;
 use App\Policies\OrganizationScope;
+use App\Services\EducationCatalogReports;
 use App\Services\EducationReports;
 use App\Services\SpreadsheetExport;
 use Generator;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -32,8 +35,58 @@ class EducationReportController extends Controller
     {
         [$report, , , $labels, $query] = $this->report($request, $reports);
         $rows = $this->rows($query, $labels[$report]['columns']);
-        $filename = "pedbase-{$report}.{$format}";
 
+        return $this->download($format, "pedbase-{$report}.{$format}", $rows, $spreadsheet);
+    }
+
+    public function catalog(Request $request, EducationCatalogReports $reports): Response
+    {
+        $filters = $this->catalogFilters($request);
+
+        return Inertia::render('reports/Catalog', [
+            'filters' => $filters,
+            'definitions' => EducationCatalogReports::REPORTS,
+            'columns' => EducationCatalogReports::COLUMNS,
+            'rows' => $reports->query($request->user(), $filters)->simplePaginate(25)->withQueryString(),
+        ]);
+    }
+
+    public function exportCatalog(Request $request, string $format, EducationCatalogReports $reports, SpreadsheetExport $spreadsheet): BinaryFileResponse|StreamedResponse
+    {
+        $filters = $this->catalogFilters($request);
+        $query = $reports->query($request->user(), $filters);
+        $columns = array_intersect_key(EducationCatalogReports::COLUMNS, array_flip(match ($filters['report']) {
+            'workloads' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'position_title', 'was_primary', 'academic_year', 'amount', 'unit', 'period', 'details'],
+            'workload_totals' => ['organization', 'type', 'region', 'area', 'archived_at', 'academic_year', 'amount', 'unit', 'period'],
+            'placements' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'position_title', 'was_primary'],
+            'categories' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'category'],
+            'courses' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'provider', 'ended_on', 'hours'],
+        }));
+
+        return $this->download($format, "pedbase-catalog-{$filters['report']}.{$format}", $this->rows($query, $columns), $spreadsheet);
+    }
+
+    private function catalogFilters(Request $request): array
+    {
+        abort_unless(config('pedbase.education_catalog_enabled'), 404);
+
+        $filters = $request->validate([
+            'report' => ['nullable', Rule::in(array_keys(EducationCatalogReports::REPORTS))],
+            'organization_id' => ['nullable', 'integer', 'min:1'],
+            'type' => ['nullable', 'alpha_dash:ascii', 'max:50'],
+            'area' => ['nullable', 'alpha_dash:ascii', 'max:32'],
+            'year' => ['nullable', 'integer', 'between:1900,9998'],
+            'teacher' => ['nullable', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:150'],
+            'provider' => ['nullable', 'string', 'max:255'],
+        ]);
+        $filters['report'] ??= 'workloads';
+
+        return $filters;
+    }
+
+    private function download(string $format, string $filename, Generator $rows, SpreadsheetExport $spreadsheet): BinaryFileResponse|StreamedResponse
+    {
         if ($format === 'xlsx') {
             return response()->download($spreadsheet->xlsx($rows), $filename, [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

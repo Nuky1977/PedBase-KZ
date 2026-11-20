@@ -8,6 +8,7 @@ import {
     template,
 } from '@/routes/education-organizations';
 import { index as imports } from '@/routes/education-organizations/imports';
+import { index as reports } from '@/routes/education-organizations/reports';
 
 defineProps<{
     showTemplates: boolean;
@@ -49,6 +50,9 @@ function filter(event: Event) {
     <section class="space-y-5 p-4 md:p-6">
         <Head title="Білім беру ұйымдары" />
         <h1 class="text-2xl font-semibold">Білім беру ұйымдары</h1>
+        <Link :href="reports()" class="text-sm underline"
+            >Каталог есептері</Link
+        >
         <nav v-if="showTemplates" class="flex flex-wrap gap-4 text-sm">
             <Link :href="create()" class="underline">Ұйым қосу</Link>
             <Link :href="imports()" class="underline">Excel импорты</Link>

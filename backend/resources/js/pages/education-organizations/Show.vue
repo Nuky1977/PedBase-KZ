@@ -2,11 +2,13 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { edit, index, status } from '@/routes/education-organizations';
+import { index as reports } from '@/routes/education-organizations/reports';
 
 type Status = 'active' | 'inactive' | 'archived';
 
 const props = defineProps<{
     canUpdateStatus: boolean;
+    canEdit: boolean;
     organization: {
         id: number;
         name: string;
@@ -40,11 +42,17 @@ function saveStatus() {
         >
         <h1 class="text-2xl font-semibold">{{ organization.name }}</h1>
         <Link
-            v-if="canUpdateStatus"
+            v-if="canEdit"
             :href="edit(organization.id)"
             class="text-sm underline"
         >
             Ұйымды өңдеу
+        </Link>
+        <Link
+            :href="reports({ query: { organization_id: organization.id } })"
+            class="text-sm underline"
+        >
+            Ұйым есептері
         </Link>
         <dl class="grid gap-3 rounded-lg border p-4">
             <div v-if="organization.short_name">

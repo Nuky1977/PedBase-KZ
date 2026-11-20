@@ -38,6 +38,7 @@ beforeEach(function () {
             CREATE TABLE education_regions (id INTEGER PRIMARY KEY, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL, source_url TEXT, source_updated_on TEXT);
             CREATE TABLE education_areas (id INTEGER PRIMARY KEY, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL, region_id INTEGER NOT NULL REFERENCES education_regions(id), source_url TEXT, source_updated_on TEXT);
             CREATE TABLE education_organizations (id INTEGER PRIMARY KEY, type_id INTEGER NOT NULL REFERENCES education_organization_types(id), area_id INTEGER NOT NULL REFERENCES education_areas(id), name TEXT NOT NULL, short_name TEXT, bin TEXT NOT NULL UNIQUE, locality TEXT NOT NULL, is_active INTEGER NOT NULL, archived_at TEXT, created_at TEXT, updated_at TEXT);
+            CREATE TABLE education_organization_admins (user_id INTEGER NOT NULL, organization_id INTEGER NOT NULL, PRIMARY KEY (user_id, organization_id));
             CREATE TABLE audit_events (id INTEGER PRIMARY KEY, actor_id INTEGER REFERENCES users(id), action TEXT NOT NULL, subject_type TEXT NOT NULL, subject_id INTEGER NOT NULL, created_at TEXT NOT NULL);
             SQL);
     }

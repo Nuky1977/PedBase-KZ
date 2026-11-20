@@ -62,6 +62,10 @@ class EducationOrganizationRegistration
                     ? new EducationOrganization
                     : EducationOrganization::query()->lockForUpdate()->findOrFail($id);
                 $data = $this->validate($input, $id);
+                if ($organization->exists && (int) $organization->type_id !== (int) $data['type_id']
+                    && DB::table('education_employments')->where('organization_id', $organization->id)->exists()) {
+                    throw ValidationException::withMessages(['type_code' => 'Еңбек тарихы бар ұйымның түрін өзгертуге болмайды.']);
+                }
                 $this->persist($organization, $data);
                 AuditEvent::record($id === null ? 'organization.created' : 'organization.updated', 'education_organization', $organization->id);
 

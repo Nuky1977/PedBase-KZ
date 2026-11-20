@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import PageLinks from '@/components/PageLinks.vue';
+import { index as reports } from '@/routes/education-organizations/reports';
 
 defineProps<{
     employments: {
@@ -22,6 +23,9 @@ defineProps<{
     <section class="max-w-2xl space-y-5 p-4 md:p-6">
         <Head title="Ұйымдардағы жұмыс орындарым" />
         <h1 class="text-2xl font-semibold">Ұйымдардағы жұмыс орындарым</h1>
+        <Link :href="reports()" class="text-sm underline"
+            >Менің жүктемем және кәсіби дамуым</Link
+        >
         <p
             v-if="!employments.data.length"
             class="text-sm text-muted-foreground"

@@ -6,6 +6,7 @@ import { confirm, preview } from '@/routes/education-organizations/imports';
 
 const props = defineProps<{
     types: Record<string, string>;
+    workloadTypes: string[];
     regions: { id: number; code: string; name: string }[];
     areas: { region_id: number; code: string; name: string }[];
 }>();
@@ -26,6 +27,7 @@ const error = ref('');
 const status = ref('');
 const busy = ref(false);
 const region = ref('');
+const workload = ref('');
 const areas = computed(() => {
     const selected = props.regions.find((item) => item.code === region.value);
 
@@ -47,6 +49,10 @@ async function submit(save: boolean) {
 
     const body = new FormData();
     body.append('file', file.value);
+
+    if (workload.value) {
+        body.append('workload_type', workload.value);
+    }
 
     if (save && token.value) {
         body.append('token', token.value);
@@ -82,10 +88,11 @@ async function submit(save: boolean) {
             error.value =
                 result.errors?.file?.join('\n') ??
                 result.errors?.token?.[0] ??
+                result.errors?.workload_type?.[0] ??
                 'Импорт сұрауы орындалмады.';
         } else if (save) {
             rows.value = [];
-            status.value = `Тіркелген ұйымдар саны: ${result.created}.`;
+            status.value = `Сақталған жазбалар саны: ${result.created}.`;
         } else {
             rows.value = result.rows;
             token.value = result.token;
@@ -104,7 +111,33 @@ async function submit(save: boolean) {
         <Head title="Ұйымдарды Excel арқылы тіркеу" />
         <Link :href="index()" class="text-sm underline">Ұйымдар каталогы</Link>
         <h1 class="text-2xl font-semibold">Ұйымдарды Excel арқылы тіркеу</h1>
-        <ul class="flex flex-wrap gap-4 text-sm">
+        <label class="grid max-w-sm gap-1 text-sm">
+            Импорт түрі
+            <select
+                v-model="workload"
+                :disabled="busy"
+                class="rounded-md border bg-background p-2"
+                @change="
+                    rows = [];
+                    token = null;
+                    error = '';
+                    status = '';
+                "
+            >
+                <option value="">Ұйымдарды тіркеу</option>
+                <option v-for="code in workloadTypes" :key="code" :value="code">
+                    {{ types[code] }} · жүктеме
+                </option>
+            </select>
+        </label>
+        <a
+            v-if="workload"
+            :href="template.url(workload, { query: { workload: 1 } })"
+            class="text-sm underline"
+        >
+            Жүктеме XLSX үлгісі
+        </a>
+        <ul v-else class="flex flex-wrap gap-4 text-sm">
             <li v-for="(name, code) in types" :key="code">
                 <a
                     :href="template.url(code, { query: { registration: 1 } })"

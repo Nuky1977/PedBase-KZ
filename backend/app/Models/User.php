@@ -75,6 +75,14 @@ public function setPrimarySchool(School $school): void
     $this->getConnection()->transaction(function () use ($school) {
         self::query()->whereKey($this->getKey())->lockForUpdate()->firstOrFail();
 
+        if (config('pedbase.education_catalog_enabled')) {
+            $catalogPrimary = $this->getConnection()->table('education_primary_workplaces as p')
+                ->join('education_organizations as o', 'o.id', '=', 'p.organization_id')
+                ->where('p.user_id', $this->getKey())->first(['o.legacy_school_id']);
+            abort_if($catalogPrimary !== null && (int) $catalogPrimary->legacy_school_id !== (int) $school->getKey(), 422,
+                'Педагогтің каталогта басқа негізгі жұмыс орны бар.');
+        }
+
         $this->schools()->newPivotQuery()->where('is_primary', true)
             ->update(['is_primary' => false, 'updated_at' => now()]);
 

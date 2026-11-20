@@ -44,14 +44,19 @@ Route::middleware(['auth', 'admin'])->prefix('/admin/imports')->name('admin.impo
 Route::middleware(['auth', 'admin'])->prefix('education-organizations')->name('education-organizations.')->controller(EducationRegistrationController::class)->group(function () {
     Route::get('create', 'create')->name('create');
     Route::post('/', 'store')->name('store');
-    Route::get('{organization}/edit', 'edit')->whereNumber('organization')->name('edit');
-    Route::put('{organization}', 'update')->whereNumber('organization')->name('update');
     Route::get('imports', 'imports')->name('imports.index');
     Route::post('imports/preview', 'preview')->middleware('throttle:20,1,education-preview')->name('imports.preview');
     Route::post('imports/confirm', 'confirm')->middleware('throttle:5,1,education-confirm')->name('imports.confirm');
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/education-organizations/reports', [EducationReportController::class, 'catalog'])->name('education-organizations.reports.index');
+    Route::get('/education-organizations/reports/{format}', [EducationReportController::class, 'exportCatalog'])
+        ->whereIn('format', ['csv', 'xlsx'])->name('education-organizations.reports.export');
+    Route::get('/education-organizations/{organization}/edit', [EducationRegistrationController::class, 'edit'])
+        ->whereNumber('organization')->name('education-organizations.edit');
+    Route::put('/education-organizations/{organization}', [EducationRegistrationController::class, 'update'])
+        ->whereNumber('organization')->name('education-organizations.update');
     Route::get('/education-organizations', [EducationOrganizationController::class, 'index'])->name('education-organizations.index');
     Route::get('/education-organizations/templates/{type}', [EducationOrganizationController::class, 'employmentTemplate'])
         ->middleware('admin')->name('education-organizations.template');

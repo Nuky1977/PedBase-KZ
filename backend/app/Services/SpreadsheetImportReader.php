@@ -13,7 +13,7 @@ class SpreadsheetImportReader
     public const MAX_ROWS = 100;
 
     /** @return array<int, array<int, string>> */
-    public function read(string $path): array
+    public function read(string $path, int $maxColumns = 8): array
     {
         $zip = new ZipArchive;
         if ($zip->open($path, ZipArchive::RDONLY | ZipArchive::CHECKCONS) !== true) {
@@ -39,7 +39,7 @@ class SpreadsheetImportReader
                     $lastColumn = $column;
                     $value = $this->cell($sheet, $cell, $sharedStrings);
                     if ($value !== '') {
-                        if ($column >= 8 || mb_strlen($value) > 1000) {
+                        if ($column >= $maxColumns || mb_strlen($value) > 1000) {
                             $this->invalid('Ұяшық немесе баған саны импорт шегінен асты.');
                         }
                         $values[$column] = $value;

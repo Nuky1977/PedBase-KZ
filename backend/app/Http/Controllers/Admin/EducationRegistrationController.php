@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SpreadsheetImportRequest;
+use App\Models\AuditEvent;
 use App\Models\EducationOrganization;
+use App\Policies\EducationOrganizationScope;
 use App\Services\EducationOrganizationRegistration;
+use App\Services\EducationWorkloadImport;
+use App\UserRole;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -26,13 +30,14 @@ class EducationRegistrationController extends Controller
         return Inertia::render('education-organizations/Form', $registration->formData() + ['organization' => null]);
     }
 
-    public function edit(int $organization, EducationOrganizationRegistration $registration): Response
+    public function edit(Request $request, int $organization, EducationOrganizationRegistration $registration, EducationOrganizationScope $scope): Response
     {
         $this->ensureEnabled();
-        $entry = EducationOrganization::query()->findOrFail($organization);
+        $entry = $this->editableOrganization($request, $organization, $scope);
         $area = DB::table('education_areas')->find($entry->area_id);
 
         return Inertia::render('education-organizations/Form', $registration->formData() + [
+            'identityEditable' => $request->user()->isAdmin(),
             'organization' => [
                 ...$entry->only(['id', 'name', 'short_name', 'bin', 'locality']),
                 'status' => $entry->status(),
@@ -51,10 +56,23 @@ class EducationRegistrationController extends Controller
         return to_route('education-organizations.show', $entry);
     }
 
-    public function update(Request $request, int $organization, EducationOrganizationRegistration $registration): RedirectResponse
+    public function update(Request $request, int $organization, EducationOrganizationRegistration $registration, EducationOrganizationScope $scope): RedirectResponse
     {
         $this->ensureEnabled();
-        $entry = $registration->save($request->all(), $organization);
+        $entry = DB::transaction(function () use ($request, $organization, $registration, $scope) {
+            $entry = $this->editableOrganization($request, $organization, $scope, lock: true);
+            if ($request->user()->isAdmin()) {
+                return $registration->save($request->all(), $entry->id);
+            }
+            $entry->update($request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'short_name' => ['nullable', 'string', 'max:255'],
+                'locality' => ['required', 'string', 'max:255'],
+            ]));
+            AuditEvent::record('organization.updated', 'education_organization', $entry->id);
+
+            return $entry;
+        }, 3);
 
         return to_route('education-organizations.show', $entry);
     }
@@ -67,17 +85,19 @@ class EducationRegistrationController extends Controller
 
         return Inertia::render('education-organizations/Import', [
             'types' => $references['types']->pluck('name', 'code')->all() + EducationOrganizationRegistration::TYPES,
+            'workloadTypes' => EducationWorkloadImport::TYPES,
             'regions' => $references['regions'],
             'areas' => $references['areas'],
         ]);
     }
 
-    public function preview(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration): JsonResponse
+    public function preview(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads): JsonResponse
     {
         $this->ensureEnabled();
         $path = $request->file('file')->getPathname();
         try {
-            $result = $registration->inspect($path);
+            $type = $request->validated('workload_type');
+            $result = $type === null ? $registration->inspect($path) : $workloads->inspect($type, $path);
         } catch (QueryException) {
             throw ValidationException::withMessages(['file' => 'Анықтамалықтар тексерілмеді. Сұрауды кейін қайталаңыз.']);
         }
@@ -88,7 +108,7 @@ class EducationRegistrationController extends Controller
         return response()->json(['rows' => $result['rows'], 'token' => $token])->header('Cache-Control', 'private, no-store');
     }
 
-    public function confirm(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration): JsonResponse
+    public function confirm(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads): JsonResponse
     {
         $this->ensureEnabled();
         $path = $request->file('file')->getPathname();
@@ -102,7 +122,8 @@ class EducationRegistrationController extends Controller
             throw ValidationException::withMessages(['file' => 'Файл немесе әкімші алдын ала қарауға сәйкес келмейді не растау мерзімі аяқталған.']);
         }
         try {
-            $created = $registration->import($path);
+            $type = $request->validated('workload_type');
+            $created = $type === null ? $registration->import($path) : $workloads->import($type, $path);
         } catch (QueryException) {
             throw ValidationException::withMessages(['file' => 'Импорт сақталмады. Файл мен анықтамалықтарды қайта тексеріңіз.']);
         }
@@ -114,7 +135,7 @@ class EducationRegistrationController extends Controller
     {
         return [
             'actor' => $request->user()->id,
-            'kind' => 'education_organizations',
+            'kind' => $request->validated('workload_type') ?? 'education_organizations',
             'digest' => hash_file('sha256', $path),
         ];
     }
@@ -122,5 +143,16 @@ class EducationRegistrationController extends Controller
     private function ensureEnabled(): void
     {
         abort_unless(config('pedbase.education_catalog_enabled'), 404);
+    }
+
+    private function editableOrganization(Request $request, int $id, EducationOrganizationScope $scope, bool $lock = false): EducationOrganization
+    {
+        $user = $request->user();
+        abort_unless(in_array($user->role, [UserRole::ADMIN, UserRole::SCHOOL_ADMIN], true), 403);
+        $query = $scope->visibleTo($user)->whereKey($id);
+        $entry = ($lock ? $query->lockForUpdate() : $query)->first();
+        abort_unless($entry !== null && ($user->isAdmin() || $entry->archived_at === null), 403);
+
+        return $entry;
     }
 }
