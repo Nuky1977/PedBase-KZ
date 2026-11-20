@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
     BriefcaseBusiness,
+    FileSpreadsheet,
     FolderGit2,
     LayoutGrid,
     School,
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
+import { index as importsIndex } from '@/routes/admin/imports';
 import { index as schoolsIndex } from '@/routes/admin/schools';
 import { index as usersIndex } from '@/routes/admin/users';
 import { show as dossier } from '@/routes/dossiers';
@@ -42,6 +44,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Мектептер', href: schoolsIndex(), icon: School },
     { title: 'Ұйымдар', href: organizations(), icon: School },
     { title: 'Есептер', href: reports(), icon: BookOpen },
+    { title: 'Excel импорты', href: importsIndex(), icon: FileSpreadsheet },
 ];
 
 const defaultNavItems: NavItem[] = [

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\SpreadsheetImportController;
 use App\Http\Controllers\Teacher\ProfileController;
 use App\Http\Controllers\TeacherEmploymentController;
 use App\Http\Controllers\OrganizationController;
@@ -27,6 +28,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+
+Route::middleware(['auth', 'admin'])->prefix('/admin/imports')->name('admin.imports.')->group(function () {
+    Route::get('/', [SpreadsheetImportController::class, 'index'])->name('index');
+    Route::get('/{kind}/template', [SpreadsheetImportController::class, 'template'])
+        ->whereIn('kind', ['schools', 'teachers'])->name('template');
+    Route::post('/{kind}/preview', [SpreadsheetImportController::class, 'preview'])
+        ->whereIn('kind', ['schools', 'teachers'])->middleware('throttle:20,1')->name('preview');
+    Route::post('/{kind}/confirm', [SpreadsheetImportController::class, 'confirm'])
+        ->whereIn('kind', ['schools', 'teachers'])->middleware('throttle:5,1')->name('confirm');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/teacher/employment', [TeacherEmploymentController::class, 'mine'])->name('teacher.employment.index');
