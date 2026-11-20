@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\UserRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,7 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
+        abort_unless($user->role === UserRole::TEACHER, 403);
         $profile = $user->teacherProfile;
 
         return Inertia::render('teacher/Profile', [
@@ -45,6 +47,7 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $user = $request->user();
+        abort_unless($user->role === UserRole::TEACHER, 403);
 
         $profileId = $user->teacherProfile()
             ->value('id');

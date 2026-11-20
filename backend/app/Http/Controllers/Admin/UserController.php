@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\AccountRemoval;
 use App\Models\User;
 use App\UserRole;
 use Inertia\Inertia;
@@ -10,6 +11,7 @@ use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
@@ -89,16 +91,31 @@ public function update(Request $request, User $user): RedirectResponse
         ],
         'role' => ['required', Rule::enum(UserRole::class)],
     ]);
-if ($request->user()->is($user)) {
-    $validated['role'] = $user->role->value;
-}
-    $user->update($validated);
+    $user->getConnection()->transaction(function () use ($request, $user, $validated) {
+        $lockedUser = User::query()->lockForUpdate()->findOrFail($user->id);
+        if ($request->user()->is($lockedUser) || $lockedUser->isAdmin()) {
+            $validated['role'] = $lockedUser->role->value;
+        }
+
+        $nextRole = UserRole::from($validated['role']);
+        $oldScope = match ($lockedUser->role) {
+            UserRole::SCHOOL_ADMIN => 'school_administrators',
+            UserRole::METHODIST => 'district_methodists',
+            default => null,
+        };
+
+        if ($nextRole !== $lockedUser->role && $oldScope !== null && Schema::hasTable($oldScope)) {
+            $lockedUser->getConnection()->table($oldScope)->where('user_id', $lockedUser->id)->delete();
+        }
+
+        $lockedUser->update($validated);
+    }, 3);
 
     return redirect()
         ->route('admin.users.index')
         ->with('success', 'Пайдаланушы мәліметтері сәтті жаңартылды.');
 }
-public function destroy(Request $request, User $user): RedirectResponse
+public function destroy(Request $request, User $user, AccountRemoval $accounts): RedirectResponse
 {
     if ($request->user()->is($user)) {
         return redirect()
@@ -106,7 +123,7 @@ public function destroy(Request $request, User $user): RedirectResponse
             ->with('success', 'Өз аккаунтыңызды өшіруге болмайды.');
     }
 
-    $user->delete();
+    $accounts->delete($user);
 
     return redirect()
         ->route('admin.users.index')
