@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import PageLinks from '@/components/PageLinks.vue';
-import { index, show, template } from '@/routes/education-organizations';
+import {
+    create,
+    index,
+    show,
+    template,
+} from '@/routes/education-organizations';
+import { index as imports } from '@/routes/education-organizations/imports';
 
 defineProps<{
     showTemplates: boolean;
@@ -43,6 +49,10 @@ function filter(event: Event) {
     <section class="space-y-5 p-4 md:p-6">
         <Head title="Білім беру ұйымдары" />
         <h1 class="text-2xl font-semibold">Білім беру ұйымдары</h1>
+        <nav v-if="showTemplates" class="flex flex-wrap gap-4 text-sm">
+            <Link :href="create()" class="underline">Ұйым қосу</Link>
+            <Link :href="imports()" class="underline">Excel импорты</Link>
+        </nav>
         <details v-if="showTemplates" class="text-sm">
             <summary class="cursor-pointer">
                 Еңбек деректерінің жобалық XLSX үлгілері

@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EducationRegistrationController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,16 @@ Route::middleware(['auth', 'admin'])->prefix('/admin/imports')->name('admin.impo
         ->whereIn('kind', ['schools', 'teachers'])->middleware('throttle:20,1')->name('preview');
     Route::post('/{kind}/confirm', [SpreadsheetImportController::class, 'confirm'])
         ->whereIn('kind', ['schools', 'teachers'])->middleware('throttle:5,1')->name('confirm');
+});
+
+Route::middleware(['auth', 'admin'])->prefix('education-organizations')->name('education-organizations.')->controller(EducationRegistrationController::class)->group(function () {
+    Route::get('create', 'create')->name('create');
+    Route::post('/', 'store')->name('store');
+    Route::get('{organization}/edit', 'edit')->whereNumber('organization')->name('edit');
+    Route::put('{organization}', 'update')->whereNumber('organization')->name('update');
+    Route::get('imports', 'imports')->name('imports.index');
+    Route::post('imports/preview', 'preview')->middleware('throttle:20,1,education-preview')->name('imports.preview');
+    Route::post('imports/confirm', 'confirm')->middleware('throttle:5,1,education-confirm')->name('imports.confirm');
 });
 
 Route::middleware('auth')->group(function () {

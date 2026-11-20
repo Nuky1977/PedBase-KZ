@@ -8,6 +8,10 @@ class SpreadsheetImportRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        if ($this->routeIs('education-organizations.imports.*')) {
+            abort_unless(config('pedbase.education_catalog_enabled'), 404);
+        }
+
         return $this->user()->isAdmin();
     }
 
@@ -15,7 +19,7 @@ class SpreadsheetImportRequest extends FormRequest
     {
         return [
             'file' => ['required', 'file', 'extensions:xlsx', 'mimes:xlsx', 'max:2048'],
-            'token' => [$this->routeIs('admin.imports.confirm') ? 'required' : 'nullable', 'string', 'max:2048'],
+            'token' => [$this->routeIs('admin.imports.confirm', 'education-organizations.imports.confirm') ? 'required' : 'nullable', 'string', 'max:2048'],
         ];
     }
 

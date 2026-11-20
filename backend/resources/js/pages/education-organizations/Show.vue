@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { index, status } from '@/routes/education-organizations';
+import { edit, index, status } from '@/routes/education-organizations';
 
 type Status = 'active' | 'inactive' | 'archived';
 
@@ -39,6 +39,13 @@ function saveStatus() {
             >Білім беру ұйымдарына қайту</Link
         >
         <h1 class="text-2xl font-semibold">{{ organization.name }}</h1>
+        <Link
+            v-if="canUpdateStatus"
+            :href="edit(organization.id)"
+            class="text-sm underline"
+        >
+            Ұйымды өңдеу
+        </Link>
         <dl class="grid gap-3 rounded-lg border p-4">
             <div v-if="organization.short_name">
                 <dt class="text-sm text-muted-foreground">Қысқаша атауы</dt>

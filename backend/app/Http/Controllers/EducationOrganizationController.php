@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditEvent;
 use App\Models\EducationOrganization;
 use App\Policies\EducationOrganizationScope;
+use App\Services\EducationOrganizationRegistration;
 use App\Services\SpreadsheetExport;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Builder;
@@ -74,10 +75,19 @@ class EducationOrganizationController extends Controller
         return to_route('education-organizations.show', $organization);
     }
 
-    public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export): BinaryFileResponse
+    public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export, EducationOrganizationRegistration $registration): BinaryFileResponse
     {
         abort_unless(config('pedbase.education_catalog_enabled'), 404);
         abort_unless($request->user()->isAdmin(), 403);
+        if ($request->boolean('registration')) {
+            abort_unless(array_key_exists($type, EducationOrganizationRegistration::TYPES)
+                || DB::table('education_organization_types')->where('code', $type)->exists(), 404);
+
+            return response()->download($registration->template($type, $export), "pedbase-education-{$type}-registration.xlsx", [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'private, no-store',
+            ])->deleteFileAfterSend(true);
+        }
         $additionalColumns = match ($type) {
             'school' => ['Пән коды', 'Оқу жылы', 'Апталық жүктеме'],
             'college' => ['Мамандық коды', 'Біліктілік коды', 'Кәсіптік модуль коды', 'Оқу жылы', 'Жүктеме', 'Өлшем бірлігі'],
