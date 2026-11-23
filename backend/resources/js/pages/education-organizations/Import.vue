@@ -163,7 +163,7 @@ async function submit(save: boolean) {
             </li>
         </ul>
         <p v-if="teacherAccounts" class="text-sm">
-            Әр педагогке бір жол енгізіңіз. Алғашқы құпиясөзді педагог
+            Әр жұмыс орнын жеке жолға енгізіңіз. Алғашқы құпиясөзді педагог
             «Құпиясөзді ұмыттыңыз ба?» бөлімі арқылы өзі орнатады.
         </p>
         <details class="space-y-2 text-sm">

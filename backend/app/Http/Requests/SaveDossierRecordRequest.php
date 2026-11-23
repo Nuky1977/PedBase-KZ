@@ -10,6 +10,10 @@ class SaveDossierRecordRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        if ($this->route('kind') === 'achievements') {
+            abort_unless(config('pedbase.education_catalog_enabled'), 404);
+        }
+
         return app(TeacherDossierPolicy::class)->manage($this->user(), $this->route('teacher'));
     }
 
@@ -37,6 +41,14 @@ class SaveDossierRecordRequest extends FormRequest
                 'category' => ['required', 'string', 'max:120'],
                 'awarded_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
                 'valid_until' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:awarded_on'],
+            ],
+            'achievements' => [
+                'title' => ['required', 'string', 'max:200'],
+                'issuer' => ['required', 'string', 'max:200'],
+                'awarded_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+                'level' => ['required', 'string', 'max:100'],
+                'description' => ['nullable', 'string', 'max:2000'],
+                'certificate' => ['nullable', File::types(['pdf'])->max('5mb')],
             ],
         };
     }

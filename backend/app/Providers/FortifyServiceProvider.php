@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -29,21 +29,21 @@ class FortifyServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot(): void
-{
-    $this->configureActions();
-    $this->configureViews();
-    $this->configureRateLimiting();
+    {
+        $this->configureActions();
+        $this->configureViews();
+        $this->configureRateLimiting();
 
-    Fortify::authenticateUsing(function (Request $request) {
-        $user = User::where('username', $request->username)->first();
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('username', $request->username)->first();
 
-        if ($user && Hash::check($request->password, $user->password)) {
-            return $user;
-        }
+            if ($user && Hash::check($request->password, $user->password) && ! $user->catalog_onboarding_pending) {
+                return $user;
+            }
 
-        return null;
-    });
-}
+            return null;
+        });
+    }
 
     /**
      * Configure Fortify actions.

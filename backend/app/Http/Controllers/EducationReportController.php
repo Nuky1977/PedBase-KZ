@@ -60,7 +60,10 @@ class EducationReportController extends Controller
             'workload_totals' => ['organization', 'type', 'region', 'area', 'archived_at', 'academic_year', 'amount', 'unit', 'period'],
             'placements' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'position_title', 'was_primary'],
             'categories' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'category', 'awarded_on', 'valid_until'],
-            'courses' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'provider', 'ended_on', 'hours'],
+            'courses' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'course_title', 'provider', 'ended_on', 'hours', 'certificate_issued_on'],
+            'workforce' => ['type', 'region', 'area', 'teachers'],
+            'profiles' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'education_level', 'total_experience_months', 'teaching_experience_months'],
+            'achievements' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'award_title', 'issuer', 'achievement_on', 'level'],
         }));
 
         return $this->download($format, "pedbase-catalog-{$filters['report']}.{$format}", $this->rows($query, $columns), $spreadsheet);
@@ -74,6 +77,7 @@ class EducationReportController extends Controller
             'report' => ['nullable', Rule::in(array_keys(EducationCatalogReports::REPORTS))],
             'organization_id' => ['nullable', 'integer', 'min:1'],
             'type' => ['nullable', 'alpha_dash:ascii', 'max:50'],
+            'region' => ['nullable', 'alpha_dash:ascii', 'max:32'],
             'area' => ['nullable', 'alpha_dash:ascii', 'max:32'],
             'year' => ['nullable', 'integer', 'between:1900,9998'],
             'subject' => ['nullable', 'string', 'max:150'],

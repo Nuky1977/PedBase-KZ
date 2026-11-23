@@ -28,7 +28,7 @@ class SpreadsheetImport
     public const CATALOG_TEACHER_COLUMNS = [
         'name' => 'Аты-жөні', 'username' => 'Логин', 'email' => 'Email',
         'bin' => 'Ұйым БСН', 'type' => 'Ұйым түрінің коды', 'area' => 'Аумақ коды',
-        'position_title' => 'Лауазымы',
+        'position_title' => 'Лауазымы', 'placement' => 'Жұмыс орны',
     ];
 
     public function __construct(private SpreadsheetImportReader $reader) {}
@@ -38,6 +38,9 @@ class SpreadsheetImport
         $data = $this->reader->read($path);
         $columns = $kind === self::CATALOG_TEACHERS ? self::CATALOG_TEACHER_COLUMNS : self::COLUMNS[$kind];
         $headers = $data[1] ?? [];
+        if ($kind === self::CATALOG_TEACHERS && ! in_array($columns['placement'], $headers, true)) {
+            unset($columns['placement']);
+        }
         if (count($headers) !== count($columns) || array_diff($headers, $columns) || count(array_unique($headers)) !== count($columns)) {
             throw ValidationException::withMessages(['file' => 'Бірінші жолда үлгідегі барлық баған атауы дәл бір рет берілуі керек.']);
         }
@@ -174,6 +177,7 @@ class SpreadsheetImport
             return $account + [
                 'type' => ['required', Rule::in(array_keys(EducationOrganizationRegistration::TYPES))],
                 'area' => ['required', 'alpha_dash:ascii', 'max:32'],
+                'placement' => ['nullable', Rule::in(['primary', 'secondary'])],
             ];
         }
 
@@ -293,17 +297,31 @@ class SpreadsheetImport
             ->when($lock, fn ($query) => $query->orderBy('o.id')->lockForUpdate())
             ->get(['o.id', 'o.bin', 't.code as type', 'a.code as area'])->keyBy('bin');
         [$existingLogins, $existingEmails] = $this->existingAccounts($rows);
-        $logins = $emails = [];
+        $logins = $emails = $placements = $primary = $firstRows = [];
         foreach ($rows as $number => &$row) {
             $login = $row['username'];
             $email = $row['email'];
+            $names = [$email, $row['name']];
+            $firstRows[$login] ??= $number;
             if ($existingLogins->has($login) || $existingEmails->has($email)) {
                 $errors[$number][] = 'Логин немесе email дерекқорда бұрыннан бар.';
             }
-            if (isset($logins[$login]) || isset($emails[$email])) {
-                $errors[$number][] = 'Логин немесе email файлда қайталанған.';
+            if ((isset($logins[$login]) && $logins[$login] !== $names) || (isset($emails[$email]) && $emails[$email] !== $login)) {
+                $errors[$number][] = 'Файлдағы логин, email және аты-жөн сәйкестігін тексеріңіз.';
             }
-            $logins[$login] = $emails[$email] = true;
+            $row['placement'] = ($row['placement'] ?? null) ?: (isset($logins[$login]) ? 'secondary' : 'primary');
+            if ($row['placement'] === 'primary') {
+                if (isset($primary[$login])) {
+                    $errors[$number][] = 'Бір педагогке бір ғана негізгі жұмыс орны беріледі.';
+                }
+                $primary[$login] = true;
+            }
+            $logins[$login] ??= $names;
+            $emails[$email] ??= $login;
+            if (isset($placements[$login][$row['bin']])) {
+                $errors[$number][] = 'Осы ұйымдағы жұмыс орны файлда қайталанған.';
+            }
+            $placements[$login][$row['bin']] = true;
             $organization = $organizations->get($row['bin']);
             if ($organization === null || $organization->area !== $row['area'] || $organization->type !== $row['type']) {
                 $errors[$number][] = 'БСН, түр және аумақ бойынша белсенді ұйым табылмады.';
@@ -313,29 +331,41 @@ class SpreadsheetImport
             $row['organization_id'] = $organization->id;
         }
         unset($row);
+        foreach (array_diff_key($firstRows, $primary) as $number) {
+            $errors[$number][] = 'Негізгі жұмыс орнын primary деп белгілеңіз.';
+        }
     }
 
     private function saveCatalogTeachers(array $rows): void
     {
+        $users = [];
         foreach ($rows as $row) {
-            $user = $this->createTeacher($row);
+            $user = $users[$row['username']] ??= $this->createTeacher($row, catalog: true);
             $placement = ['user_id' => $user->id, 'organization_id' => $row['organization_id']];
             DB::table('education_employments')->insert($placement + [
                 'position_title' => $row['position_title'], 'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
             ]);
-            DB::table('education_primary_workplaces')->insert($placement);
+            if ($row['placement'] === 'primary') {
+                DB::table('education_primary_workplaces')->insert($placement);
+            }
         }
     }
 
-    private function createTeacher(array $row): User
+    private function createTeacher(array $row, bool $catalog = false): User
     {
-        return User::create([
+        $user = new User([
             'name' => $row['name'],
             'username' => $row['username'],
             'email' => $row['email'],
             'role' => UserRole::TEACHER,
             'password' => Hash::make(bin2hex(random_bytes(32))),
         ]);
+        if ($catalog) {
+            $user->forceFill(['catalog_onboarding_pending' => true]);
+        }
+        $user->save();
+
+        return $user;
     }
 
     private function saveTeachers(array $rows): void

@@ -6,11 +6,17 @@ import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { certificate, destroy, store, update } from '@/routes/dossiers';
+import {
+    achievementDocument,
+    certificate,
+    destroy,
+    store,
+    update,
+} from '@/routes/dossiers';
 import { organizationEmployment } from '@/routes/teacher';
 import { edit as editProfile } from '@/routes/teacher/profile';
 
-type Kind = 'diplomas' | 'courses' | 'attestations';
+type Kind = 'diplomas' | 'courses' | 'attestations' | 'achievements';
 type Entry = {
     id: number;
     has_certificate?: boolean;
@@ -41,9 +47,21 @@ const props = defineProps<{
     diplomas: Records | null;
     courses: Records;
     attestations: Records;
+    achievements: Records | null;
 }>();
 
 const sections: { key: Kind; title: string; fields: Field[] }[] = [
+    {
+        key: 'achievements',
+        title: 'Марапаттар және кәсіби жетістіктер',
+        fields: [
+            { key: 'title', label: 'Атауы' },
+            { key: 'issuer', label: 'Берген ұйым' },
+            { key: 'awarded_on', label: 'Берілген күні', type: 'date' },
+            { key: 'level', label: 'Деңгейі' },
+            { key: 'description', label: 'Сипаттамасы', optional: true },
+        ],
+    },
     {
         key: 'diplomas',
         title: 'Дипломдар',
@@ -248,11 +266,14 @@ const inputClass =
                                 <InputError :message="errors()[field.key]" />
                             </div>
                             <div
-                                v-if="section.key === 'courses'"
+                                v-if="
+                                    section.key === 'courses' ||
+                                    section.key === 'achievements'
+                                "
                                 class="space-y-1"
                             >
                                 <Label for="certificate"
-                                    >Сертификат файлы (PDF, 5 МБ дейін)</Label
+                                    >Растайтын құжат (PDF, 5 МБ дейін)</Label
                                 >
                                 <input
                                     id="certificate"
@@ -310,10 +331,15 @@ const inputClass =
                                 variant="outline"
                                 ><a
                                     :href="
-                                        certificate({
-                                            teacher: teacher.id,
-                                            course: entry.id,
-                                        }).url
+                                        section.key === 'achievements'
+                                            ? achievementDocument({
+                                                  teacher: teacher.id,
+                                                  achievement: entry.id,
+                                              }).url
+                                            : certificate({
+                                                  teacher: teacher.id,
+                                                  course: entry.id,
+                                              }).url
                                     "
                                     >PDF жүктеу</a
                                 ></Button

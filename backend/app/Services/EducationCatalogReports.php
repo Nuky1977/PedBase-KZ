@@ -16,6 +16,9 @@ class EducationCatalogReports
         'placements' => 'Еңбек жазбалары',
         'categories' => 'Санаттар және аттестаттау',
         'courses' => 'Кәсіби даму курстары',
+        'workforce' => 'Аумақ пен ұйым түрі бойынша педагогтер',
+        'profiles' => 'Білім деңгейі мен еңбек өтілі',
+        'achievements' => 'Марапаттар және кәсіби жетістіктер',
     ];
 
     public const COLUMNS = [
@@ -25,6 +28,11 @@ class EducationCatalogReports
         'amount' => 'Жүктеме', 'unit' => 'Өлшем бірлігі', 'period' => 'Есептеу кезеңі', 'details' => 'Бағдарлама және бағыт',
         'category' => 'Санат', 'awarded_on' => 'Аттестатталған күні', 'valid_until' => 'Жарамдылық мерзімі',
         'provider' => 'Курс провайдері', 'ended_on' => 'Аяқталған күні', 'hours' => 'Курс сағаты',
+        'course_title' => 'Курс атауы', 'certificate_issued_on' => 'Сертификат берілген күні',
+        'teachers' => 'Педагогтер саны', 'education_level' => 'Білім деңгейі',
+        'total_experience_months' => 'Жалпы еңбек өтілі (ай)', 'teaching_experience_months' => 'Педагогикалық өтілі (ай)',
+        'award_title' => 'Марапат немесе жетістік', 'issuer' => 'Берген ұйым',
+        'achievement_on' => 'Марапат күні', 'level' => 'Деңгейі',
     ];
 
     public function __construct(private EducationOrganizationScope $scope) {}
@@ -49,7 +57,7 @@ class EducationCatalogReports
             ->when($mine, fn (Builder $q) => $q->where('e.user_id', $user->id))
             ->select('o.name as organization', 't.code as type', 'r.name as region', 'a.name as area', 'u.name as teacher', 'o.archived_at')
             ->orderBy('o.name')->orderBy('o.id')->orderBy('u.name')->orderBy('e.id');
-        foreach (['organization_id' => 'o.id', 'type' => 't.code', 'area' => 'a.code', 'teacher' => 'u.name'] as $key => $column) {
+        foreach (['organization_id' => 'o.id', 'type' => 't.code', 'region' => 'r.code', 'area' => 'a.code', 'teacher' => 'u.name'] as $key => $column) {
             if (isset($filters[$key])) {
                 $query->where($column, $filters[$key]);
             }
@@ -81,10 +89,21 @@ class EducationCatalogReports
                 ->addSelect('c.category', 'c.awarded_on', 'c.valid_until')->orderByDesc('c.awarded_on')->orderBy('c.id'),
             'courses' => $query->join('teacher_courses as c', 'c.user_id', '=', 'e.user_id')
                 ->when(isset($filters['provider']), fn (Builder $q) => $q->where('c.provider', $filters['provider']))
-                ->addSelect('c.provider', 'c.ended_on', 'c.hours')->orderByDesc('c.ended_on')->orderBy('c.id'),
+                ->addSelect('c.title as course_title', 'c.provider', 'c.ended_on', 'c.hours', 'c.certificate_issued_on')
+                ->orderByDesc('c.ended_on')->orderBy('c.id'),
             'placements' => $query->leftJoin('education_primary_workplaces as p', fn ($join) => $join
                 ->on('p.user_id', '=', 'e.user_id')->on('p.organization_id', '=', 'e.organization_id'))
                 ->addSelect('e.position_title')->selectRaw('CASE WHEN p.user_id IS NULL THEN 0 ELSE 1 END AS was_primary'),
+            'workforce' => $query->reorder()->where('u.role', UserRole::TEACHER->value)->where('e.status', 'active')
+                ->where('o.is_active', true)->whereNull('o.archived_at')
+                ->select('t.code as type', 'r.name as region', 'a.name as area')->selectRaw('COUNT(DISTINCT e.user_id) AS teachers')
+                ->groupBy('t.code', 'r.id', 'r.name', 'a.id', 'a.name')
+                ->orderBy('r.name')->orderBy('r.id')->orderBy('a.name')->orderBy('a.id')->orderBy('t.code'),
+            'profiles' => $query->leftJoin('teacher_profiles as p', 'p.user_id', '=', 'e.user_id')
+                ->addSelect('p.education_level', 'p.total_experience_months', 'p.teaching_experience_months'),
+            'achievements' => $query->join('teacher_achievements as ac', 'ac.user_id', '=', 'e.user_id')
+                ->addSelect('ac.title as award_title', 'ac.issuer', 'ac.awarded_on as achievement_on', 'ac.level')
+                ->orderByDesc('ac.awarded_on')->orderBy('ac.id'),
         };
     }
 }

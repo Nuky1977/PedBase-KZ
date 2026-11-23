@@ -222,12 +222,38 @@ it('rejects a qualification belonging to a different official specialty', functi
     $this->assertDatabaseCount('education_workloads', 0);
 });
 
+it('counts distinct educators in area and type and exports achievement metadata only', function () {
+    $one = ($this->org)('college', '000000000465');
+    $two = ($this->org)('college', '000000000466');
+    foreach ([$one, $two] as $organization) {
+        DB::table('education_employments')->insert(['user_id' => $this->teacher->id, 'organization_id' => $organization, 'status' => 'active']);
+    }
+    $this->teacher->teacherProfile()->create(['education_level' => 'Synthetic education', 'total_experience_months' => 48]);
+    $this->teacher->achievements()->create(['title' => 'Synthetic award', 'issuer' => 'Synthetic issuer',
+        'awarded_on' => '2025-01-01', 'level' => 'Synthetic level', 'description' => 'PRIVATE-DESCRIPTION', 'document_path' => 'PRIVATE-PATH']);
+    $index = route('education-organizations.reports.index', ['report' => 'workforce', 'region' => 'FIXTURE-R']);
+    $this->actingAs($this->admin)->get($index)->assertInertia(fn (Assert $page) => $page->has('rows.data', 1)->where('rows.data.0.teachers', 1));
+    $this->get(route('education-organizations.reports.index', ['report' => 'profiles']))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 2)->where('rows.data.0.total_experience_months', 48));
+    $export = route('education-organizations.reports.export', ['format' => 'csv', 'report' => 'achievements', 'organization_id' => $one]);
+    expect($this->get($export)->assertOk()->streamedContent())->toContain('Synthetic award')->not->toContain('PRIVATE-DESCRIPTION', 'PRIVATE-PATH');
+    $methodist = User::factory()->create(['role' => UserRole::METHODIST]);
+    $dossier = route('dossiers.show', $this->teacher);
+    $this->actingAs($methodist)->get($dossier)->assertForbidden();
+    DB::table('education_methodist_grants')->insert(['user_id' => $methodist->id, 'area_id' => $this->area,
+        'type_id' => DB::table('education_organization_types')->where('code', 'college')->value('id')]);
+    $this->get($dossier)->assertInertia(fn (Assert $page) => $page->has('achievements.data', 1)
+        ->missing('achievements.data.0.document_path')->missing('achievements.data.0.description'));
+    $this->actingAs(User::factory()->create(['role' => UserRole::TEACHER]))->get($export)->assertForbidden();
+});
+
 it('registers catalog teacher accounts only after admin confirmation and allows email password setup', function () {
     $college = ($this->org)('college', '000000000461');
     $preschool = ($this->org)('preschool', '000000000462');
     $rows = [
         ['Synthetic Teacher A', 'catalog_teacher_a', 'catalog-a@example.invalid', '000000000461', 'college', 'FIXTURE-A', 'Test position A'],
         ['Synthetic Teacher B', 'catalog_teacher_b', 'catalog-b@example.invalid', '000000000462', 'preschool', 'FIXTURE-A', 'Test position B'],
+        ['Synthetic Teacher A', 'catalog_teacher_a', 'catalog-a@example.invalid', '000000000462', 'preschool', 'FIXTURE-A', 'Second position', 'secondary'],
     ];
     $workbook = function (array $rows): UploadedFile {
         $path = app(SpreadsheetExport::class)->xlsx([array_values(SpreadsheetImport::CATALOG_TEACHER_COLUMNS), ...$rows]);
@@ -263,9 +289,13 @@ it('registers catalog teacher accounts only after admin confirmation and allows 
     foreach ([$college, $preschool] as $index => $organization) {
         $user = User::where('username', $rows[$index][1])->firstOrFail();
         expect($user->role)->toBe(UserRole::TEACHER);
+        expect((bool) $user->catalog_onboarding_pending)->toBeTrue();
         $this->assertDatabaseHas('education_employments', ['user_id' => $user->id, 'organization_id' => $organization, 'position_title' => $rows[$index][6]]);
         $this->assertDatabaseHas('education_primary_workplaces', ['user_id' => $user->id, 'organization_id' => $organization]);
     }
+    $firstUser = User::where('username', 'catalog_teacher_a')->firstOrFail();
+    $this->assertDatabaseHas('education_employments', ['user_id' => $firstUser->id, 'organization_id' => $preschool]);
+    $this->assertDatabaseMissing('education_primary_workplaces', ['user_id' => $firstUser->id, 'organization_id' => $preschool]);
     $this->assertDatabaseHas('audit_events', ['action' => 'spreadsheet.import.education_teachers', 'subject_id' => 0]);
     $this->postJson($confirm, $input + ['token' => $token])->assertUnprocessable();
     config(['pedbase.education_catalog_enabled' => false]);
@@ -273,11 +303,18 @@ it('registers catalog teacher accounts only after admin confirmation and allows 
 
     auth()->guard()->logout();
     Notification::fake();
+    config(['mail.default' => 'log']);
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+    Notification::assertNothingSent();
+    expect((bool) $user->fresh()->catalog_onboarding_pending)->toBeTrue();
+    $this->travel(61)->seconds();
+    config(['mail.default' => 'array']);
     $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
     $notification = Notification::sent($user, ResetPassword::class)->sole();
     $password = 'Synthetic-test-passphrase-28';
     $reset = ['email' => $user->email, 'token' => $notification->token, 'password' => $password, 'password_confirmation' => $password];
     $this->post(route('password.update'), $reset)->assertSessionHasNoErrors();
     expect(Hash::check($password, $user->fresh()->password))->toBeTrue();
+    expect((bool) $user->fresh()->catalog_onboarding_pending)->toBeFalse();
     $this->post(route('password.update'), $reset)->assertSessionHasErrors('email');
 });

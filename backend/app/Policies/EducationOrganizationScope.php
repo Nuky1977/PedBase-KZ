@@ -10,6 +10,14 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class EducationOrganizationScope
 {
+    public function containsTeacher(User $actor, User $teacher): bool
+    {
+        return $this->visibleTo($actor)->whereExists(fn (QueryBuilder $employment) => $employment
+            ->selectRaw('1')->from('education_employments')
+            ->where('education_employments.user_id', $teacher->id)->where('education_employments.status', 'active')
+            ->whereColumn('education_employments.organization_id', 'education_organizations.id'))->exists();
+    }
+
     public function visibleTo(User $user): Builder
     {
         $query = EducationOrganization::query();

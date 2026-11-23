@@ -110,7 +110,8 @@ class EducationOrganizationController extends Controller
         if ($type === 'teacher-accounts') {
             $path = $export->xlsx([array_values(SpreadsheetImport::CATALOG_TEACHER_COLUMNS)], [
                 ['Файлға құпиясөз, ЖСН немесе жеке құжат деректерін қоспаңыз.'],
-                ['Бір педагогке бір жол беріңіз. Көрсетілген белсенді ұйым негізгі жұмыс орны болады.'],
+                ['Әр жұмыс орнын бөлек жолға жазыңыз. Логин, email және аты-жөн барлық жолда бірдей болуы керек.'],
+                ['Негізгі жұмыс орны үшін primary, қосымша жұмыс орны үшін secondary қолданыңыз.'],
                 ['Ұйым түрінің кодтары: '.implode(', ', array_keys(EducationOrganizationRegistration::TYPES))],
                 ['Педагог алғашқы құпиясөзін тіркелген email арқылы «Құпиясөзді ұмыттыңыз ба?» бөлімінде орнатады.'],
             ]);

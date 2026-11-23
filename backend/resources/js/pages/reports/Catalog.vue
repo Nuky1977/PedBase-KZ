@@ -8,6 +8,7 @@ type Filters = {
     report: string;
     organization_id?: number;
     type?: string;
+    region?: string;
     area?: string;
     year?: number;
     subject?: string;
@@ -54,6 +55,8 @@ const detailLabels: Record<string, string> = {
     category: 'Санат',
     club: 'Үйірме',
     section: 'Секция',
+    classifier_source: 'Сыныптауыштың дереккөзі',
+    classifier_revision: 'Сыныптауыш редакциясы',
 };
 const valueLabels: Record<string, Record<string, string>> = {
     was_primary: { '0': 'Қосымша', '1': 'Негізгі' },
@@ -84,6 +87,7 @@ function filter() {
         report: form.report,
         organization_id: form.organization_id ?? undefined,
         type: form.type || undefined,
+        region: form.region || undefined,
         area: form.area || undefined,
         year: isWorkload.value ? form.year || undefined : undefined,
         subject: isWorkload.value ? form.subject || undefined : undefined,
@@ -188,7 +192,15 @@ function filter() {
                 />
             </label>
             <label class="grid gap-1 text-sm"
-                >Аумақ коды
+                >Облыс немесе қала коды
+                <input
+                    v-model="form.region"
+                    maxlength="32"
+                    class="rounded-md border bg-background p-2"
+                />
+            </label>
+            <label class="grid gap-1 text-sm"
+                >Аудан немесе қала коды
                 <input
                     v-model="form.area"
                     maxlength="32"
