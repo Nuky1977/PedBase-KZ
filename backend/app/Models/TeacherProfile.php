@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Services\ProtectedIin;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TeacherProfile extends Model
 {
+    protected $hidden = ['iin', 'iin_ciphertext', 'iin_lookup'];
+
     protected $fillable = [
         'user_id',
         'iin',
@@ -30,6 +34,24 @@ class TeacherProfile extends Model
             'total_experience_months' => 'integer',
             'teaching_experience_months' => 'integer',
         ];
+    }
+
+    protected function iin(): Attribute
+    {
+        return Attribute::make(
+            get: fn (#[\SensitiveParameter] ?string $legacy, array $attributes) => isset($attributes['iin_ciphertext'])
+                ? app(ProtectedIin::class)->decrypt($attributes['iin_ciphertext'])
+                : $legacy,
+            set: static function (#[\SensitiveParameter] ?string $value): array {
+                $protection = app(ProtectedIin::class);
+
+                return [
+                    'iin' => null,
+                    'iin_ciphertext' => $value === null ? null : $protection->encrypt($value),
+                    'iin_lookup' => $value === null ? null : $protection->fingerprint($value),
+                ];
+            },
+        );
     }
 
     public function user(): BelongsTo
