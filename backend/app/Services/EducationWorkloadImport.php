@@ -180,10 +180,15 @@ class EducationWorkloadImport
         }
         $details = array_intersect_key($data, self::DETAILS[$type]);
         ksort($details);
-        $details = json_encode($details, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        $identity = hash('sha256', json_encode([$teacher->id, $organization->id, (int) $data['year'], $data['unit'], $data['period'], $details], JSON_THROW_ON_ERROR));
+        $encodedDetails = json_encode($details, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $identity = hash('sha256', json_encode([$teacher->id, $organization->id, (int) $data['year'], $data['unit'], $data['period'], $encodedDetails], JSON_THROW_ON_ERROR));
         if (DB::table('education_workloads')->where('identity', $identity)->exists()) {
             $this->invalid('Осы жүктеме бұрын тіркелген.');
+        }
+        if ($type === 'college') {
+            $details['classifier_source'] = CollegeQualificationReference::SOURCE;
+            $details['classifier_revision'] = CollegeQualificationReference::REVISION;
+            $encodedDetails = json_encode($details, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
 
         return [
@@ -191,7 +196,7 @@ class EducationWorkloadImport
             'employment_id' => $employment?->id, 'academic_year' => (int) $data['year'],
             'position_title' => $data['position'], 'was_primary' => $isPrimary,
             'amount' => $data['amount'], 'unit' => $data['unit'], 'period' => $data['period'],
-            'details' => $details, 'identity' => $identity,
+            'details' => $encodedDetails, 'identity' => $identity,
         ];
     }
 

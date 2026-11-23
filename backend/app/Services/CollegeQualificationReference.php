@@ -6,6 +6,10 @@ use Illuminate\Validation\ValidationException;
 
 class CollegeQualificationReference
 {
+    public const SOURCE = 'https://old.adilet.zan.kz/kaz/docs/V1800017564';
+
+    public const REVISION = '2026-05-13';
+
     private const SHA256 = '0c14498cc164ff5202e28c85fdd3a52d9a95f6c3f06bea5bef01f1f360da3e95';
 
     private ?array $pairs = null;
