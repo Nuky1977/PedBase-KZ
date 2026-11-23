@@ -97,5 +97,4 @@ jobs:
 
       - name: Audit NPM dependencies including development tools
         if: ${{ !cancelled() }}
-        # Report moderate development advisories and fail on high or critical.
-        run: npm audit --include=dev --audit-level=high
+        run: npm audit --include=dev
