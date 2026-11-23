@@ -2,6 +2,7 @@
 
 use App\Models\School;
 use App\Models\User;
+use App\Services\CollegeQualificationReference;
 use App\Services\EducationWorkloadImport;
 use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
@@ -196,7 +197,9 @@ it('filters multiple college assignments and attestation history in reports and 
         ->assertInertia(fn (Assert $page) => $page->has('rows.data', 0));
     $csv = $this->get(route('education-organizations.reports.export', ['format' => 'csv', 'subject' => 'Test subject']))
         ->assertOk()->streamedContent();
-    expect($csv)->toContain('Test subject')->not->toContain('Test module A');
+    expect($csv)->toContain('Test subject', 'Мектепке дейінгі тәрбие және оқыту', 'Тәрбиешінің көмекшісі*')->not->toContain('Test module A');
+    $names = app(CollegeQualificationReference::class)->validate('07151200', '3W07151201');
+    expect($names['qualification'])->toContain('Қалыптаушы', 'Металдар мен қорытпаларды құюшы');
 
     $this->teacher->attestations()->create(['category' => 'Test category', 'awarded_on' => '2025-09-01', 'valid_until' => '2030-09-01']);
     $this->teacher->attestations()->create(['category' => 'Previous category', 'awarded_on' => '2021-09-01']);

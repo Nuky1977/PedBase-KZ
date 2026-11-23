@@ -149,9 +149,9 @@ class EducationWorkloadImport
             'required_without' => '«:attribute» немесе «:values» өрісін толтырыңыз.',
             'in' => '«:attribute» мәні жарамсыз.',
         ], $this->columns($type))->validate();
-        if ($type === 'college') {
-            $this->qualifications->validate($data['specialty_code'], $data['qualification_code']);
-        }
+        $officialNames = $type === 'college'
+            ? $this->qualifications->validate($data['specialty_code'], $data['qualification_code'])
+            : null;
         $teacher = DB::table('users')->where('username', $data['teacher'])->where('role', UserRole::TEACHER->value)
             ->when($lock, fn (Builder $q) => $q->lockForUpdate())->first(['id']);
         if ($teacher === null) {
@@ -185,9 +185,11 @@ class EducationWorkloadImport
         if (DB::table('education_workloads')->where('identity', $identity)->exists()) {
             $this->invalid('Осы жүктеме бұрын тіркелген.');
         }
-        if ($type === 'college') {
+        if ($officialNames !== null) {
             $details['classifier_source'] = CollegeQualificationReference::SOURCE;
             $details['classifier_revision'] = CollegeQualificationReference::REVISION;
+            $details['classifier_specialty_name'] = implode(' / ', $officialNames['specialty']);
+            $details['classifier_qualification_name'] = implode(' / ', $officialNames['qualification']);
             $encodedDetails = json_encode($details, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         }
 

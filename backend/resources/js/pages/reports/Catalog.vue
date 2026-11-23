@@ -57,6 +57,8 @@ const detailLabels: Record<string, string> = {
     section: 'Секция',
     classifier_source: 'Сыныптауыштың дереккөзі',
     classifier_revision: 'Сыныптауыш редакциясы',
+    classifier_specialty_name: 'Мамандықтың ресми атауы',
+    classifier_qualification_name: 'Біліктіліктің ресми атауы',
 };
 const valueLabels: Record<string, Record<string, string>> = {
     was_primary: { '0': 'Қосымша', '1': 'Негізгі' },
