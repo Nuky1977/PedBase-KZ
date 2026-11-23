@@ -24,16 +24,40 @@ class EducationOrganizationController extends Controller
     public function index(Request $request, EducationOrganizationScope $scope): Response
     {
         $catalog = $this->catalog($request, $scope);
-        $filters = $request->validate(['type' => ['nullable', 'string', 'max:50', 'alpha_dash:ascii']]);
+        $filters = $request->validate([
+            'type' => ['nullable', 'string', 'max:50', 'alpha_dash:ascii'],
+            'region' => ['nullable', 'string', 'max:32', 'alpha_dash:ascii'],
+            'area' => ['nullable', 'string', 'max:32', 'alpha_dash:ascii'],
+            'status' => ['nullable', Rule::in(['active', 'inactive', 'archived'])],
+        ]);
         $type = $filters['type'] ?? null;
         $visibleTypes = (clone $catalog)->select('education_organizations.type_id')->distinct()->toBase();
+        $visibleAreas = (clone $catalog)->select('education_organizations.area_id')->distinct()->toBase();
+        $areas = DB::table('education_areas')->whereIn('education_areas.id', $visibleAreas);
+        $visibleRegions = (clone $areas)->select('region_id')->distinct();
+        $organizations = $this->withDirectoryNames($catalog);
+        foreach (['type' => 'types.code', 'region' => 'regions.code', 'area' => 'areas.code'] as $key => $column) {
+            if (isset($filters[$key])) {
+                $organizations->where($column, $filters[$key]);
+            }
+        }
+        match ($filters['status'] ?? null) {
+            'active' => $organizations->whereNull('education_organizations.archived_at')->where('education_organizations.is_active', true),
+            'inactive' => $organizations->whereNull('education_organizations.archived_at')->where('education_organizations.is_active', false),
+            'archived' => $organizations->whereNotNull('education_organizations.archived_at'),
+            default => null,
+        };
 
         return Inertia::render('education-organizations/Index', [
             'showTemplates' => $request->user()->isAdmin(),
             'types' => DB::table('education_organization_types')->whereIn('id', $visibleTypes)->orderBy('name')->get(['code', 'name']),
             'type' => $type,
-            'organizations' => $this->withDirectoryNames($catalog)
-                ->when($type !== null, fn (Builder $query) => $query->where('types.code', $type))
+            'filters' => $filters,
+            'regions' => DB::table('education_regions')->whereIn('id', $visibleRegions)->orderBy('name')->orderBy('code')->get(['code', 'name']),
+            'areas' => $areas->join('education_regions as r', 'r.id', '=', 'education_areas.region_id')
+                ->orderBy('education_areas.name')->orderBy('education_areas.code')
+                ->get(['education_areas.code', 'education_areas.name', 'r.code as region_code']),
+            'organizations' => $organizations
                 ->orderBy('education_organizations.name')->orderBy('education_organizations.id')
                 ->paginate(20)->withQueryString()->through(fn (EducationOrganization $organization) => [
                     ...$organization->toArray(),

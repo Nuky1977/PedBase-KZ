@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, reactive } from 'vue';
 import PageLinks from '@/components/PageLinks.vue';
 import {
     create,
@@ -10,10 +11,15 @@ import {
 import { index as imports } from '@/routes/education-organizations/imports';
 import { index as reports } from '@/routes/education-organizations/reports';
 
-defineProps<{
+const props = defineProps<{
     showTemplates: boolean;
     type: string | null;
     types: { code: string; name: string }[];
+    filters: Partial<
+        Record<'type' | 'region' | 'area' | 'status', string | null>
+    >;
+    regions: { code: string; name: string }[];
+    areas: { code: string; name: string; region_code: string }[];
     organizations: {
         data: {
             id: number;
@@ -37,12 +43,32 @@ const draftTemplates = [
     { code: 'special', name: 'Арнайы білім беру' },
 ];
 
-function filter(event: Event) {
-    const type = (event.target as HTMLSelectElement).value;
-    router.get(index.url(), type ? { type } : {}, {
-        replace: true,
-        preserveScroll: true,
-    });
+const form = reactive({ ...props.filters });
+const availableAreas = computed(() =>
+    props.areas.filter(
+        (area) => !form.region || area.region_code === form.region,
+    ),
+);
+const statuses = {
+    active: 'Белсенді',
+    inactive: 'Белсенді емес',
+    archived: 'Мұрағатталған',
+};
+
+function filter() {
+    router.get(
+        index.url(),
+        {
+            type: form.type || undefined,
+            region: form.region || undefined,
+            area: form.area || undefined,
+            status: form.status || undefined,
+        },
+        {
+            replace: true,
+            preserveScroll: true,
+        },
+    );
 }
 </script>
 
@@ -69,23 +95,79 @@ function filter(event: Event) {
                 </li>
             </ul>
         </details>
-        <label class="flex max-w-xs flex-col gap-2 text-sm">
-            Ұйым түрі
-            <select
-                :value="type ?? ''"
-                class="rounded-md border bg-background p-2"
-                @change="filter"
-            >
-                <option value="">Барлық түрі</option>
-                <option
-                    v-for="item in types"
-                    :key="item.code"
-                    :value="item.code"
+        <form
+            class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+            @submit.prevent="filter"
+        >
+            <label class="grid min-w-0 gap-1 text-sm">
+                Ұйым түрі
+                <select
+                    v-model="form.type"
+                    class="rounded-md border bg-background p-2"
                 >
-                    {{ item.name }}
-                </option>
-            </select>
-        </label>
+                    <option value="">Барлық түрі</option>
+                    <option
+                        v-for="item in types"
+                        :key="item.code"
+                        :value="item.code"
+                    >
+                        {{ item.name }}
+                    </option>
+                </select>
+            </label>
+            <label class="grid min-w-0 gap-1 text-sm">
+                Облыс немесе қала
+                <select
+                    v-model="form.region"
+                    class="rounded-md border bg-background p-2"
+                    @change="form.area = ''"
+                >
+                    <option value="">Барлық облыс пен қала</option>
+                    <option
+                        v-for="item in regions"
+                        :key="item.code"
+                        :value="item.code"
+                    >
+                        {{ item.name }}
+                    </option>
+                </select>
+            </label>
+            <label class="grid min-w-0 gap-1 text-sm">
+                Аудан немесе қала
+                <select
+                    v-model="form.area"
+                    class="rounded-md border bg-background p-2"
+                >
+                    <option value="">Барлық аудан мен қала</option>
+                    <option
+                        v-for="item in availableAreas"
+                        :key="item.code"
+                        :value="item.code"
+                    >
+                        {{ item.name }}
+                    </option>
+                </select>
+            </label>
+            <label class="grid min-w-0 gap-1 text-sm">
+                Мәртебе
+                <select
+                    v-model="form.status"
+                    class="rounded-md border bg-background p-2"
+                >
+                    <option value="">Барлық мәртебе</option>
+                    <option
+                        v-for="(label, code) in statuses"
+                        :key="code"
+                        :value="code"
+                    >
+                        {{ label }}
+                    </option>
+                </select>
+            </label>
+            <button class="self-end rounded-md border px-3 py-2 text-sm">
+                Сүзу
+            </button>
+        </form>
         <p
             v-if="!organizations.data.length"
             class="text-sm text-muted-foreground"
@@ -109,13 +191,7 @@ function filter(event: Event) {
                     {{ organization.area_name }} · {{ organization.locality }}
                 </p>
                 <p class="mt-2 text-sm">
-                    {{
-                        {
-                            active: 'Белсенді',
-                            inactive: 'Белсенді емес',
-                            archived: 'Мұрағатталған',
-                        }[organization.status]
-                    }}
+                    {{ statuses[organization.status] }}
                 </p>
             </li>
         </ul>

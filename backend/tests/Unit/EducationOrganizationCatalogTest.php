@@ -22,16 +22,16 @@ beforeEach(function () {
 
     DB::unprepared(<<<'SQL'
         CREATE TABLE education_organization_types (id INTEGER PRIMARY KEY, code TEXT, name TEXT);
-        CREATE TABLE education_regions (id INTEGER PRIMARY KEY, name TEXT);
-        CREATE TABLE education_areas (id INTEGER PRIMARY KEY, region_id INTEGER, name TEXT);
+        CREATE TABLE education_regions (id INTEGER PRIMARY KEY, code TEXT, name TEXT);
+        CREATE TABLE education_areas (id INTEGER PRIMARY KEY, region_id INTEGER, code TEXT, name TEXT);
         CREATE TABLE education_organizations (id INTEGER PRIMARY KEY, type_id INTEGER, area_id INTEGER, name TEXT, short_name TEXT, bin TEXT, locality TEXT, is_active INTEGER, archived_at TEXT DEFAULT NULL);
         CREATE TABLE education_organization_admins (user_id INTEGER, organization_id INTEGER);
         CREATE TABLE education_methodist_grants (user_id INTEGER, area_id INTEGER, type_id INTEGER);
         CREATE TABLE education_employments (id INTEGER PRIMARY KEY, user_id INTEGER, organization_id INTEGER, position_title TEXT, status TEXT);
         CREATE TABLE education_primary_workplaces (user_id INTEGER, organization_id INTEGER);
         INSERT INTO education_organization_types VALUES (1, 'school', 'School'), (2, 'college', 'College');
-        INSERT INTO education_regions VALUES (1, 'Region');
-        INSERT INTO education_areas VALUES (1, 1, 'Area A'), (2, 1, 'Area B');
+        INSERT INTO education_regions VALUES (1, 'R1', 'Region'), (2, 'R2', 'Other region');
+        INSERT INTO education_areas VALUES (1, 1, 'A1', 'Area A'), (2, 2, 'A2', 'Area B');
         INSERT INTO education_organizations (id, type_id, area_id, name, short_name, bin, locality, is_active) VALUES
             (1, 1, 1, 'School A', NULL, '000000000001', 'A', 1),
             (2, 2, 1, 'College A', NULL, '000000000002', 'A', 1),
@@ -61,6 +61,18 @@ it('requires an exact area and organization-type grant for a methodist', functio
     $this->get(route('education-organizations.show', 4))->assertOk();
     $this->get(route('education-organizations.show', 2))->assertForbidden();
     $this->get(route('education-organizations.show', 3))->assertForbidden();
+});
+
+it('combines region area and status filters within the assigned organizations', function () {
+    DB::table('education_organizations')->where('id', 2)->update(['is_active' => false, 'archived_at' => '2026-10-01']);
+    $this->actingAs(($this->catalogUser)(12, UserRole::SCHOOL_ADMIN));
+    $this->get(route('education-organizations.index', ['region' => 'R1', 'area' => 'A1', 'status' => 'archived']))
+        ->assertInertia(fn (Assert $page) => $page->has('regions', 1)->has('areas', 1)->has('organizations.data', 1)
+            ->where('organizations.data.0.id', 2));
+    $this->get(route('education-organizations.index', ['region' => 'R1', 'status' => 'inactive']))
+        ->assertInertia(fn (Assert $page) => $page->has('organizations.data', 0));
+    $this->get(route('education-organizations.index', ['region' => 'R2', 'area' => 'A2']))
+        ->assertInertia(fn (Assert $page) => $page->has('organizations.data', 0));
 });
 
 it('limits organization administrators to assigned organizations', function () {
