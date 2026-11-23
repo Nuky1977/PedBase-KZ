@@ -166,3 +166,41 @@ it('scopes administrators, methodists and teachers to permitted organizations an
     config(['pedbase.education_catalog_enabled' => false]);
     $this->actingAs($this->admin)->get(route('education-organizations.reports.index'))->assertNotFound();
 });
+
+it('filters multiple college assignments and attestation history in reports and exports', function () {
+    $bin = '000000000457';
+    ($this->org)('college', $bin);
+    $this->actingAs($this->admin);
+    $base = [...($this->sample)($bin), 'TEST-SPEC', 'Test specialty', 'TEST-QUAL', 'Test qualification', 'Test program'];
+    $file = ($this->makeFile)('college', [
+        [...$base, 'Test module A', ''],
+        [...$base, 'Test module B', ''],
+        [...$base, '', 'Test subject'],
+    ]);
+    $input = ['file' => $file, 'workload_type' => 'college'];
+    $token = $this->postJson(route('education-organizations.imports.preview'), $input)->assertOk()->json('token');
+    $this->postJson(route('education-organizations.imports.confirm'), $input + ['token' => $token])->assertOk();
+    $this->assertDatabaseCount('education_workloads', 3);
+    $this->actingAs($this->teacher)->get(route('dossiers.show', $this->teacher))
+        ->assertInertia(fn (Assert $page) => $page->where('showCatalogEmployment', true));
+    $this->actingAs($this->admin)->get(route('dossiers.show', $this->teacher))
+        ->assertInertia(fn (Assert $page) => $page->where('showCatalogEmployment', false));
+
+    $this->get(route('education-organizations.reports.index', ['module' => 'Test module A', 'unit' => 'academic_hour', 'period' => 'week']))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 1));
+    $this->get(route('education-organizations.reports.index', ['module' => 'Test module A', 'subject' => 'Test subject']))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 0));
+    $csv = $this->get(route('education-organizations.reports.export', ['format' => 'csv', 'subject' => 'Test subject']))
+        ->assertOk()->streamedContent();
+    expect($csv)->toContain('Test subject')->not->toContain('Test module A');
+
+    $this->teacher->attestations()->create(['category' => 'Test category', 'awarded_on' => '2025-09-01', 'valid_until' => '2030-09-01']);
+    $this->teacher->attestations()->create(['category' => 'Previous category', 'awarded_on' => '2021-09-01']);
+    $this->get(route('education-organizations.reports.index', [
+        'report' => 'categories', 'awarded_from' => '2025-01-01', 'awarded_until' => '2025-12-31',
+    ]))->assertInertia(fn (Assert $page) => $page->has('rows.data', 1)
+        ->where('rows.data.0.awarded_on', '2025-09-01')->where('rows.data.0.valid_until', '2030-09-01'));
+    $this->getJson(route('education-organizations.reports.index', [
+        'report' => 'categories', 'awarded_from' => '2025-01-01', 'awarded_until' => '2024-12-31',
+    ]))->assertUnprocessable()->assertJsonValidationErrors('awarded_until');
+});

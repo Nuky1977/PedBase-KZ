@@ -59,7 +59,7 @@ class EducationReportController extends Controller
             'workloads' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'position_title', 'was_primary', 'academic_year', 'amount', 'unit', 'period', 'details'],
             'workload_totals' => ['organization', 'type', 'region', 'area', 'archived_at', 'academic_year', 'amount', 'unit', 'period'],
             'placements' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'position_title', 'was_primary'],
-            'categories' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'category'],
+            'categories' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'category', 'awarded_on', 'valid_until'],
             'courses' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'provider', 'ended_on', 'hours'],
         }));
 
@@ -76,8 +76,14 @@ class EducationReportController extends Controller
             'type' => ['nullable', 'alpha_dash:ascii', 'max:50'],
             'area' => ['nullable', 'alpha_dash:ascii', 'max:32'],
             'year' => ['nullable', 'integer', 'between:1900,9998'],
+            'subject' => ['nullable', 'string', 'max:150'],
+            'module' => ['nullable', 'string', 'max:150'],
+            'unit' => ['nullable', Rule::in(['academic_hour', 'clock_hour', 'fte'])],
+            'period' => ['nullable', Rule::in(['week', 'academic_year'])],
             'teacher' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:150'],
+            'awarded_from' => ['nullable', 'date_format:Y-m-d'],
+            'awarded_until' => ['nullable', 'date_format:Y-m-d', Rule::when($request->filled('awarded_from'), ['after_or_equal:awarded_from'])],
             'provider' => ['nullable', 'string', 'max:255'],
         ]);
         $filters['report'] ??= 'workloads';

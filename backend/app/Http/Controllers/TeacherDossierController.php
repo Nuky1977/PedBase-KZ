@@ -32,6 +32,7 @@ class TeacherDossierController extends Controller
             'teacher' => $teacher->only(['id', 'name']),
             'canManage' => $manage,
             'isOwn' => $request->user()->is($teacher),
+            'showCatalogEmployment' => $request->user()->is($teacher) && config('pedbase.education_catalog_enabled'),
             'profile' => $profile,
             'diplomas' => $manage ? $teacher->diplomas()->orderByDesc('graduation_year')->orderByDesc('id')->paginate(15, ['*'], 'diplomas')->withQueryString() : null,
             'courses' => $teacher->courses()->orderByDesc('ended_on')->orderByDesc('id')->paginate(15, ['*'], 'courses')

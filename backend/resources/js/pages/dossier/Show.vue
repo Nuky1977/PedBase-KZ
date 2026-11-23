@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { certificate, destroy, store, update } from '@/routes/dossiers';
+import { organizationEmployment } from '@/routes/teacher';
 import { edit as editProfile } from '@/routes/teacher/profile';
 
 type Kind = 'diplomas' | 'courses' | 'attestations';
@@ -31,6 +32,7 @@ const props = defineProps<{
     teacher: { id: number; name: string };
     canManage: boolean;
     isOwn: boolean;
+    showCatalogEmployment: boolean;
     profile: {
         education_level: string | null;
         total_experience_months: number | null;
@@ -164,11 +166,16 @@ const inputClass =
                 <h1 class="text-2xl font-semibold">Педагогтің жеке ісі</h1>
                 <p class="mt-1 text-muted-foreground">{{ teacher.name }}</p>
             </div>
-            <Button v-if="isOwn" variant="outline" as-child
-                ><Link :href="editProfile()"
-                    >Жеке мәліметтерді өңдеу</Link
-                ></Button
-            >
+            <div v-if="isOwn" class="flex flex-wrap gap-2">
+                <Button variant="outline" as-child>
+                    <Link :href="editProfile()">Жеке мәліметтерді өңдеу</Link>
+                </Button>
+                <Button v-if="showCatalogEmployment" variant="outline" as-child>
+                    <Link :href="organizationEmployment()"
+                        >Ұйымдардағы жұмыс орындарым</Link
+                    >
+                </Button>
+            </div>
         </header>
         <Card>
             <CardHeader

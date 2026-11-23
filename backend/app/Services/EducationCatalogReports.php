@@ -14,7 +14,7 @@ class EducationCatalogReports
         'workloads' => 'Жүктеме',
         'workload_totals' => 'Жүктеме жиынтығы',
         'placements' => 'Еңбек жазбалары',
-        'categories' => 'Біліктілік санаттары',
+        'categories' => 'Санаттар және аттестаттау',
         'courses' => 'Кәсіби даму курстары',
     ];
 
@@ -23,7 +23,8 @@ class EducationCatalogReports
         'area' => 'Аудан немесе қала', 'teacher' => 'Педагог', 'archived_at' => 'Архив уақыты',
         'position_title' => 'Лауазым', 'was_primary' => 'Негізгі жұмыс орны', 'academic_year' => 'Оқу жылы',
         'amount' => 'Жүктеме', 'unit' => 'Өлшем бірлігі', 'period' => 'Есептеу кезеңі', 'details' => 'Бағдарлама және бағыт',
-        'category' => 'Санат', 'provider' => 'Курс провайдері', 'ended_on' => 'Аяқталған күні', 'hours' => 'Курс сағаты',
+        'category' => 'Санат', 'awarded_on' => 'Аттестатталған күні', 'valid_until' => 'Жарамдылық мерзімі',
+        'provider' => 'Курс провайдері', 'ended_on' => 'Аяқталған күні', 'hours' => 'Курс сағаты',
     ];
 
     public function __construct(private EducationOrganizationScope $scope) {}
@@ -57,6 +58,11 @@ class EducationCatalogReports
         if (in_array($filters['report'], ['workloads', 'workload_totals'], true)) {
             $query->join('education_workloads as w', 'w.employment_id', '=', 'e.id')
                 ->when(isset($filters['year']), fn (Builder $q) => $q->where('w.academic_year', $filters['year']));
+            foreach (['subject' => 'w.details->subject', 'module' => 'w.details->module', 'unit' => 'w.unit', 'period' => 'w.period'] as $key => $column) {
+                if (isset($filters[$key])) {
+                    $query->where($column, $filters[$key]);
+                }
+            }
         }
 
         return match ($filters['report']) {
@@ -70,7 +76,9 @@ class EducationCatalogReports
                 ->orderBy('o.name')->orderBy('o.id')->orderByDesc('w.academic_year')->orderBy('w.unit')->orderBy('w.period'),
             'categories' => $query->join('teacher_attestations as c', 'c.user_id', '=', 'e.user_id')
                 ->when(isset($filters['category']), fn (Builder $q) => $q->where('c.category', $filters['category']))
-                ->addSelect('c.category')->orderByDesc('c.awarded_on')->orderBy('c.id'),
+                ->when(isset($filters['awarded_from']), fn (Builder $q) => $q->where('c.awarded_on', '>=', $filters['awarded_from']))
+                ->when(isset($filters['awarded_until']), fn (Builder $q) => $q->where('c.awarded_on', '<=', $filters['awarded_until']))
+                ->addSelect('c.category', 'c.awarded_on', 'c.valid_until')->orderByDesc('c.awarded_on')->orderBy('c.id'),
             'courses' => $query->join('teacher_courses as c', 'c.user_id', '=', 'e.user_id')
                 ->when(isset($filters['provider']), fn (Builder $q) => $q->where('c.provider', $filters['provider']))
                 ->addSelect('c.provider', 'c.ended_on', 'c.hours')->orderByDesc('c.ended_on')->orderBy('c.id'),

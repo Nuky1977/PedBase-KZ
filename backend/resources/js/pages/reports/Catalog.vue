@@ -10,8 +10,14 @@ type Filters = {
     type?: string;
     area?: string;
     year?: number;
+    subject?: string;
+    module?: string;
+    unit?: string;
+    period?: string;
     teacher?: string;
     category?: string;
+    awarded_from?: string;
+    awarded_until?: string;
     provider?: string;
 };
 
@@ -80,6 +86,10 @@ function filter() {
         type: form.type || undefined,
         area: form.area || undefined,
         year: isWorkload.value ? form.year || undefined : undefined,
+        subject: isWorkload.value ? form.subject || undefined : undefined,
+        module: isWorkload.value ? form.module || undefined : undefined,
+        unit: isWorkload.value ? form.unit || undefined : undefined,
+        period: isWorkload.value ? form.period || undefined : undefined,
         teacher: form.teacher || undefined,
         category:
             form.report === 'categories'
@@ -87,6 +97,14 @@ function filter() {
                 : undefined,
         provider:
             form.report === 'courses' ? form.provider || undefined : undefined,
+        awarded_from:
+            form.report === 'categories'
+                ? form.awarded_from || undefined
+                : undefined,
+        awarded_until:
+            form.report === 'categories'
+                ? form.awarded_until || undefined
+                : undefined,
     });
 }
 </script>
@@ -111,6 +129,56 @@ function filter() {
                     </option>
                 </select>
             </label>
+            <template v-if="isWorkload">
+                <label class="grid gap-1 text-sm">
+                    Пән
+                    <input
+                        v-model="form.subject"
+                        maxlength="150"
+                        class="rounded-md border bg-background p-2"
+                    />
+                </label>
+                <label class="grid gap-1 text-sm">
+                    Кәсіптік модуль
+                    <input
+                        v-model="form.module"
+                        maxlength="150"
+                        class="rounded-md border bg-background p-2"
+                    />
+                </label>
+                <label class="grid gap-1 text-sm">
+                    Өлшем бірлігі
+                    <select
+                        v-model="form.unit"
+                        class="rounded-md border bg-background p-2"
+                    >
+                        <option value="">Барлығы</option>
+                        <option
+                            v-for="(label, code) in valueLabels.unit"
+                            :key="code"
+                            :value="code"
+                        >
+                            {{ label }}
+                        </option>
+                    </select>
+                </label>
+                <label class="grid gap-1 text-sm">
+                    Есептеу кезеңі
+                    <select
+                        v-model="form.period"
+                        class="rounded-md border bg-background p-2"
+                    >
+                        <option value="">Барлығы</option>
+                        <option
+                            v-for="(label, code) in valueLabels.period"
+                            :key="code"
+                            :value="code"
+                        >
+                            {{ label }}
+                        </option>
+                    </select>
+                </label>
+            </template>
             <label class="grid gap-1 text-sm"
                 >Ұйым түрінің коды
                 <input
@@ -164,6 +232,25 @@ function filter() {
                     class="rounded-md border bg-background p-2"
                 />
             </label>
+            <template v-if="form.report === 'categories'">
+                <label class="grid gap-1 text-sm">
+                    Аттестаттау күні (бастап)
+                    <input
+                        v-model="form.awarded_from"
+                        type="date"
+                        class="rounded-md border bg-background p-2"
+                    />
+                </label>
+                <label class="grid gap-1 text-sm">
+                    Аттестаттау күні (дейін)
+                    <input
+                        v-model="form.awarded_until"
+                        type="date"
+                        :min="form.awarded_from"
+                        class="rounded-md border bg-background p-2"
+                    />
+                </label>
+            </template>
             <button class="rounded-md border px-3 py-2 text-sm">Көрсету</button>
         </form>
         <nav class="flex gap-4 text-sm">
