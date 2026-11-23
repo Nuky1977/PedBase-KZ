@@ -31,7 +31,7 @@ class EducationWorkloadImport
         'special' => ['program' => 'Білім беру бағдарламасы', 'direction' => 'Педагог бағыты'],
     ];
 
-    public function __construct(private SpreadsheetImportReader $reader) {}
+    public function __construct(private SpreadsheetImportReader $reader, private CollegeQualificationReference $qualifications) {}
 
     public function columns(string $type): array
     {
@@ -149,6 +149,9 @@ class EducationWorkloadImport
             'required_without' => '«:attribute» немесе «:values» өрісін толтырыңыз.',
             'in' => '«:attribute» мәні жарамсыз.',
         ], $this->columns($type))->validate();
+        if ($type === 'college') {
+            $this->qualifications->validate($data['specialty_code'], $data['qualification_code']);
+        }
         $teacher = DB::table('users')->where('username', $data['teacher'])->where('role', UserRole::TEACHER->value)
             ->when($lock, fn (Builder $q) => $q->lockForUpdate())->first(['id']);
         if ($teacher === null) {

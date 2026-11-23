@@ -13,10 +13,10 @@ const props = defineProps<{
 
 type Row = {
     number: number;
-    name: string;
-    bin: string;
-    type: string;
-    area: string;
+    name?: string;
+    bin?: string;
+    type?: string;
+    area?: string;
     errors: string[];
 };
 
@@ -28,6 +28,7 @@ const status = ref('');
 const busy = ref(false);
 const region = ref('');
 const workload = ref('');
+const teacherAccounts = computed(() => workload.value === 'teacher-accounts');
 const areas = computed(() => {
     const selected = props.regions.find((item) => item.code === region.value);
 
@@ -50,7 +51,9 @@ async function submit(save: boolean) {
     const body = new FormData();
     body.append('file', file.value);
 
-    if (workload.value) {
+    if (teacherAccounts.value) {
+        body.append('teacher_accounts', '1');
+    } else if (workload.value) {
         body.append('workload_type', workload.value);
     }
 
@@ -89,6 +92,7 @@ async function submit(save: boolean) {
                 result.errors?.file?.join('\n') ??
                 result.errors?.token?.[0] ??
                 result.errors?.workload_type?.[0] ??
+                result.errors?.teacher_accounts?.[0] ??
                 'Импорт сұрауы орындалмады.';
         } else if (save) {
             rows.value = [];
@@ -108,9 +112,9 @@ async function submit(save: boolean) {
 
 <template>
     <section class="space-y-5 p-4 md:p-6">
-        <Head title="Ұйымдарды Excel арқылы тіркеу" />
+        <Head title="Excel импорты" />
         <Link :href="index()" class="text-sm underline">Ұйымдар каталогы</Link>
-        <h1 class="text-2xl font-semibold">Ұйымдарды Excel арқылы тіркеу</h1>
+        <h1 class="text-2xl font-semibold">Excel импорты</h1>
         <label class="grid max-w-sm gap-1 text-sm">
             Импорт түрі
             <select
@@ -125,6 +129,9 @@ async function submit(save: boolean) {
                 "
             >
                 <option value="">Ұйымдарды тіркеу</option>
+                <option value="teacher-accounts">
+                    Педагог аккаунттарын тіркеу
+                </option>
                 <option v-for="code in workloadTypes" :key="code" :value="code">
                     {{ types[code] }} · жүктеме
                 </option>
@@ -132,10 +139,19 @@ async function submit(save: boolean) {
         </label>
         <a
             v-if="workload"
-            :href="template.url(workload, { query: { workload: 1 } })"
+            :href="
+                template.url(
+                    workload,
+                    teacherAccounts ? undefined : { query: { workload: 1 } },
+                )
+            "
             class="text-sm underline"
         >
-            Жүктеме XLSX үлгісі
+            {{
+                teacherAccounts
+                    ? 'Педагог аккаунттарының XLSX үлгісі'
+                    : 'Жүктеме XLSX үлгісі'
+            }}
         </a>
         <ul v-else class="flex flex-wrap gap-4 text-sm">
             <li v-for="(name, code) in types" :key="code">
@@ -146,6 +162,10 @@ async function submit(save: boolean) {
                 >
             </li>
         </ul>
+        <p v-if="teacherAccounts" class="text-sm">
+            Әр педагогке бір жол енгізіңіз. Алғашқы құпиясөзді педагог
+            «Құпиясөзді ұмыттыңыз ба?» бөлімі арқылы өзі орнатады.
+        </p>
         <details class="space-y-2 text-sm">
             <summary class="cursor-pointer">
                 Аумақ кодтарын анықтамалықтан қарау
@@ -225,10 +245,10 @@ async function submit(save: boolean) {
                 <thead>
                     <tr class="border-b">
                         <th class="p-2">Жол</th>
-                        <th class="p-2">Ұйым</th>
-                        <th class="p-2">БСН</th>
-                        <th class="p-2">Түрі</th>
-                        <th class="p-2">Аумақ коды</th>
+                        <th v-if="!teacherAccounts" class="p-2">Ұйым</th>
+                        <th v-if="!teacherAccounts" class="p-2">БСН</th>
+                        <th v-if="!teacherAccounts" class="p-2">Түрі</th>
+                        <th v-if="!teacherAccounts" class="p-2">Аумақ коды</th>
                         <th class="p-2">Тексеру нәтижесі</th>
                     </tr>
                 </thead>
@@ -239,10 +259,18 @@ async function submit(save: boolean) {
                         class="border-b align-top"
                     >
                         <td class="p-2">{{ row.number }}</td>
-                        <td class="p-2">{{ row.name }}</td>
-                        <td class="p-2">{{ row.bin }}</td>
-                        <td class="p-2">{{ row.type }}</td>
-                        <td class="p-2">{{ row.area }}</td>
+                        <td v-if="!teacherAccounts" class="p-2">
+                            {{ row.name }}
+                        </td>
+                        <td v-if="!teacherAccounts" class="p-2">
+                            {{ row.bin }}
+                        </td>
+                        <td v-if="!teacherAccounts" class="p-2">
+                            {{ row.type }}
+                        </td>
+                        <td v-if="!teacherAccounts" class="p-2">
+                            {{ row.area }}
+                        </td>
                         <td class="p-2">
                             <ul
                                 v-if="row.errors.length"

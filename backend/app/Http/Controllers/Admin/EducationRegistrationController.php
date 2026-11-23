@@ -9,6 +9,7 @@ use App\Models\EducationOrganization;
 use App\Policies\EducationOrganizationScope;
 use App\Services\EducationOrganizationRegistration;
 use App\Services\EducationWorkloadImport;
+use App\Services\SpreadsheetImport;
 use App\UserRole;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
@@ -91,13 +92,18 @@ class EducationRegistrationController extends Controller
         ]);
     }
 
-    public function preview(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads): JsonResponse
+    public function preview(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads, SpreadsheetImport $accounts): JsonResponse
     {
         $this->ensureEnabled();
         $path = $request->file('file')->getPathname();
         try {
             $type = $request->validated('workload_type');
-            $result = $type === null ? $registration->inspect($path) : $workloads->inspect($type, $path);
+            if ($request->boolean('teacher_accounts')) {
+                $inspection = $accounts->inspect(SpreadsheetImport::CATALOG_TEACHERS, $path);
+                $result = ['rows' => $inspection['preview']['rows'], 'has_errors' => $inspection['errors'] !== []];
+            } else {
+                $result = $type === null ? $registration->inspect($path) : $workloads->inspect($type, $path);
+            }
         } catch (QueryException) {
             throw ValidationException::withMessages(['file' => 'Анықтамалықтар тексерілмеді. Сұрауды кейін қайталаңыз.']);
         }
@@ -108,7 +114,7 @@ class EducationRegistrationController extends Controller
         return response()->json(['rows' => $result['rows'], 'token' => $token])->header('Cache-Control', 'private, no-store');
     }
 
-    public function confirm(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads): JsonResponse
+    public function confirm(SpreadsheetImportRequest $request, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads, SpreadsheetImport $accounts): JsonResponse
     {
         $this->ensureEnabled();
         $path = $request->file('file')->getPathname();
@@ -123,7 +129,11 @@ class EducationRegistrationController extends Controller
         }
         try {
             $type = $request->validated('workload_type');
-            $created = $type === null ? $registration->import($path) : $workloads->import($type, $path);
+            $created = match (true) {
+                $request->boolean('teacher_accounts') => $accounts->save(SpreadsheetImport::CATALOG_TEACHERS, $path),
+                $type === null => $registration->import($path),
+                default => $workloads->import($type, $path),
+            };
         } catch (QueryException) {
             throw ValidationException::withMessages(['file' => 'Импорт сақталмады. Файл мен анықтамалықтарды қайта тексеріңіз.']);
         }
@@ -135,7 +145,9 @@ class EducationRegistrationController extends Controller
     {
         return [
             'actor' => $request->user()->id,
-            'kind' => $request->validated('workload_type') ?? 'education_organizations',
+            'kind' => $request->boolean('teacher_accounts')
+                ? SpreadsheetImport::CATALOG_TEACHERS
+                : ($request->validated('workload_type') ?? 'education_organizations'),
             'digest' => hash_file('sha256', $path),
         ];
     }

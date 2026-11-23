@@ -8,6 +8,7 @@ use App\Policies\EducationOrganizationScope;
 use App\Services\EducationOrganizationRegistration;
 use App\Services\EducationWorkloadImport;
 use App\Services\SpreadsheetExport;
+use App\Services\SpreadsheetImport;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -106,6 +107,19 @@ class EducationOrganizationController extends Controller
     {
         abort_unless(config('pedbase.education_catalog_enabled'), 404);
         abort_unless($request->user()->isAdmin(), 403);
+        if ($type === 'teacher-accounts') {
+            $path = $export->xlsx([array_values(SpreadsheetImport::CATALOG_TEACHER_COLUMNS)], [
+                ['Файлға құпиясөз, ЖСН немесе жеке құжат деректерін қоспаңыз.'],
+                ['Бір педагогке бір жол беріңіз. Көрсетілген белсенді ұйым негізгі жұмыс орны болады.'],
+                ['Ұйым түрінің кодтары: '.implode(', ', array_keys(EducationOrganizationRegistration::TYPES))],
+                ['Педагог алғашқы құпиясөзін тіркелген email арқылы «Құпиясөзді ұмыттыңыз ба?» бөлімінде орнатады.'],
+            ]);
+
+            return response()->download($path, 'pedbase-education-teacher-accounts.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'private, no-store',
+            ])->deleteFileAfterSend(true);
+        }
         if ($request->boolean('workload')) {
             abort_unless(in_array($type, EducationWorkloadImport::TYPES, true), 404);
 

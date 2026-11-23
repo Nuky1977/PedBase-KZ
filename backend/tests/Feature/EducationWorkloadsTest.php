@@ -4,9 +4,13 @@ use App\Models\School;
 use App\Models\User;
 use App\Services\EducationWorkloadImport;
 use App\Services\SpreadsheetExport;
+use App\Services\SpreadsheetImport;
 use App\UserRole;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -65,7 +69,7 @@ it('imports a type specific workbook after preview, protects confirmation and re
     $export = $this->get(route('education-organizations.reports.export', 'csv'))->assertOk();
     expect($export->streamedContent())->toContain($this->teacher->name)->not->toContain($this->teacher->email);
 })->with([
-    'college' => ['college', ['TEST-SPEC', 'Test specialty', 'TEST-QUAL', 'Test qualification', 'Test program', 'Test module', '']],
+    'college' => ['college', ['01120100', 'Test specialty', '3W01120101', 'Test qualification', 'Test program', 'Test module', '']],
     'preschool' => ['preschool', ['Test direction', 'Test age group', 'Test category']],
     'supplementary' => ['supplementary', ['Test club', '', 'Test program', 'Test direction']],
     'special' => ['special', ['Test program', 'Test direction']],
@@ -171,7 +175,7 @@ it('filters multiple college assignments and attestation history in reports and 
     $bin = '000000000457';
     ($this->org)('college', $bin);
     $this->actingAs($this->admin);
-    $base = [...($this->sample)($bin), 'TEST-SPEC', 'Test specialty', 'TEST-QUAL', 'Test qualification', 'Test program'];
+    $base = [...($this->sample)($bin), '01120100', 'Test specialty', '3W01120101', 'Test qualification', 'Test program'];
     $file = ($this->makeFile)('college', [
         [...$base, 'Test module A', ''],
         [...$base, 'Test module B', ''],
@@ -203,4 +207,77 @@ it('filters multiple college assignments and attestation history in reports and 
     $this->getJson(route('education-organizations.reports.index', [
         'report' => 'categories', 'awarded_from' => '2025-01-01', 'awarded_until' => '2024-12-31',
     ]))->assertUnprocessable()->assertJsonValidationErrors('awarded_until');
+});
+
+it('rejects a qualification belonging to a different official specialty', function () {
+    $bin = '000000000458';
+    ($this->org)('college', $bin);
+    $file = ($this->makeFile)('college', [[
+        ...($this->sample)($bin), '01140100', 'Test specialty', '3W01120101', 'Test qualification',
+        'Test program', 'Test module', '',
+    ]]);
+    $this->actingAs($this->admin)->postJson(route('education-organizations.imports.preview'), [
+        'file' => $file, 'workload_type' => 'college',
+    ])->assertOk()->assertJsonPath('token', null)->assertJsonCount(1, 'rows.0.errors');
+    $this->assertDatabaseCount('education_workloads', 0);
+});
+
+it('registers catalog teacher accounts only after admin confirmation and allows email password setup', function () {
+    $college = ($this->org)('college', '000000000461');
+    $preschool = ($this->org)('preschool', '000000000462');
+    $rows = [
+        ['Synthetic Teacher A', 'catalog_teacher_a', 'catalog-a@example.invalid', '000000000461', 'college', 'FIXTURE-A', 'Test position A'],
+        ['Synthetic Teacher B', 'catalog_teacher_b', 'catalog-b@example.invalid', '000000000462', 'preschool', 'FIXTURE-A', 'Test position B'],
+    ];
+    $workbook = function (array $rows): UploadedFile {
+        $path = app(SpreadsheetExport::class)->xlsx([array_values(SpreadsheetImport::CATALOG_TEACHER_COLUMNS), ...$rows]);
+        try {
+            return UploadedFile::fake()->createWithContent('teacher-accounts.xlsx', file_get_contents($path));
+        } finally {
+            unlink($path);
+        }
+    };
+    $preview = route('education-organizations.imports.preview');
+    $confirm = route('education-organizations.imports.confirm');
+    $template = route('education-organizations.template', 'teacher-accounts');
+    $input = ['file' => $workbook($rows), 'teacher_accounts' => 1];
+    foreach ([UserRole::SCHOOL_ADMIN, UserRole::METHODIST, UserRole::TEACHER] as $role) {
+        $this->actingAs(User::factory()->create(['role' => $role]));
+        $this->get($template)->assertForbidden();
+        $this->postJson($preview, $input)->assertForbidden();
+        $this->postJson($confirm, $input + ['token' => 'untrusted'])->assertForbidden();
+    }
+    $this->actingAs($this->admin)->get($template)->assertDownload('pedbase-education-teacher-accounts.xlsx');
+    $this->postJson($confirm, $input)->assertUnprocessable();
+    $duplicate = $rows[1];
+    $duplicate[1] = 'CATALOG_TEACHER_A';
+    $duplicate[4] = 'college';
+    $this->postJson($preview, ['file' => $workbook([$rows[0], $duplicate]), 'teacher_accounts' => 1])
+        ->assertOk()->assertJsonPath('token', null)->assertJsonCount(2, 'rows.1.errors');
+    $response = $this->postJson($preview, $input)->assertOk()->assertJsonCount(0, 'rows.0.errors');
+    expect($response->getContent())->not->toContain($rows[0][0], $rows[0][1], $rows[0][2]);
+    $token = $response->json('token');
+    $this->assertDatabaseMissing('users', ['username' => $rows[0][1]]);
+    $this->postJson($confirm, ['file' => $input['file'], 'token' => $token])->assertUnprocessable();
+    $this->postJson($confirm, $input + ['token' => $token])->assertOk()->assertExactJson(['created' => 2]);
+    foreach ([$college, $preschool] as $index => $organization) {
+        $user = User::where('username', $rows[$index][1])->firstOrFail();
+        expect($user->role)->toBe(UserRole::TEACHER);
+        $this->assertDatabaseHas('education_employments', ['user_id' => $user->id, 'organization_id' => $organization, 'position_title' => $rows[$index][6]]);
+        $this->assertDatabaseHas('education_primary_workplaces', ['user_id' => $user->id, 'organization_id' => $organization]);
+    }
+    $this->assertDatabaseHas('audit_events', ['action' => 'spreadsheet.import.education_teachers', 'subject_id' => 0]);
+    $this->postJson($confirm, $input + ['token' => $token])->assertUnprocessable();
+    config(['pedbase.education_catalog_enabled' => false]);
+    $this->postJson($preview, $input)->assertNotFound();
+
+    auth()->guard()->logout();
+    Notification::fake();
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+    $notification = Notification::sent($user, ResetPassword::class)->sole();
+    $password = 'Synthetic-test-passphrase-28';
+    $reset = ['email' => $user->email, 'token' => $notification->token, 'password' => $password, 'password_confirmation' => $password];
+    $this->post(route('password.update'), $reset)->assertSessionHasNoErrors();
+    expect(Hash::check($password, $user->fresh()->password))->toBeTrue();
+    $this->post(route('password.update'), $reset)->assertSessionHasErrors('email');
 });

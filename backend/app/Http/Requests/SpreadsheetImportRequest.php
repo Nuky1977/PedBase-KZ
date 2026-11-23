@@ -24,6 +24,7 @@ class SpreadsheetImportRequest extends FormRequest
             'token' => [$this->routeIs('admin.imports.confirm', 'education-organizations.imports.confirm') ? 'required' : 'nullable', 'string', 'max:2048'],
             ...($this->routeIs('education-organizations.imports.*') ? [
                 'workload_type' => ['nullable', 'string', Rule::in(EducationWorkloadImport::TYPES)],
+                'teacher_accounts' => ['sometimes', 'accepted', 'prohibits:workload_type'],
             ] : []),
         ];
     }

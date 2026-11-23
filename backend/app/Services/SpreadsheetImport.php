@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Features;
 
 class SpreadsheetImport
 {
@@ -21,12 +23,20 @@ class SpreadsheetImport
         'teachers' => ['name' => 'Аты-жөні', 'username' => 'Логин', 'email' => 'Email', 'bin' => 'Мектеп БСН', 'subject' => 'Пән коды', 'position_title' => 'Лауазымы', 'weekly_hours' => 'Апталық жүктеме', 'academic_year' => 'Оқу жылы'],
     ];
 
+    public const CATALOG_TEACHERS = 'education_teachers';
+
+    public const CATALOG_TEACHER_COLUMNS = [
+        'name' => 'Аты-жөні', 'username' => 'Логин', 'email' => 'Email',
+        'bin' => 'Ұйым БСН', 'type' => 'Ұйым түрінің коды', 'area' => 'Аумақ коды',
+        'position_title' => 'Лауазымы',
+    ];
+
     public function __construct(private SpreadsheetImportReader $reader) {}
 
     public function inspect(string $kind, string $path, bool $lock = false): array
     {
         $data = $this->reader->read($path);
-        $columns = self::COLUMNS[$kind];
+        $columns = $kind === self::CATALOG_TEACHERS ? self::CATALOG_TEACHER_COLUMNS : self::COLUMNS[$kind];
         $headers = $data[1] ?? [];
         if (count($headers) !== count($columns) || array_diff($headers, $columns) || count(array_unique($headers)) !== count($columns)) {
             throw ValidationException::withMessages(['file' => 'Бірінші жолда үлгідегі барлық баған атауы дәл бір рет берілуі керек.']);
@@ -57,7 +67,8 @@ class SpreadsheetImport
                 'alpha_dash' => '«:attribute» үшін латын әрпі, сан, дефис немесе астыңғы сызық қолданыңыз.',
                 'email' => 'Email пішімі жарамсыз.',
                 'ascii' => 'Email үшін ASCII таңбаларын қолданыңыз.',
-                'in' => '«Белсенді» бағанына «Иә» немесе «Жоқ» енгізіңіз.',
+                'is_active.in' => '«Белсенді» бағанына «Иә» немесе «Жоқ» енгізіңіз.',
+                'type.in' => 'Ұйым түрінің коды жарамсыз.',
                 'integer' => '«:attribute» бағанына бүтін сан енгізіңіз.',
                 'numeric' => '«:attribute» бағанына сан енгізіңіз.',
                 'decimal' => 'Апталық жүктемеде екі ондық таңбадан артық болмауы керек.',
@@ -75,6 +86,8 @@ class SpreadsheetImport
         $primary = [];
         if ($kind === 'schools') {
             $this->checkSchools($valid, $errors, $lock);
+        } elseif ($kind === self::CATALOG_TEACHERS) {
+            $this->checkCatalogTeachers($valid, $errors, $lock);
         } else {
             $this->checkTeachers($valid, $errors, $primary, $lock);
         }
@@ -125,6 +138,8 @@ class SpreadsheetImport
                 foreach ($result['data'] as $row) {
                     School::create($row);
                 }
+            } elseif ($kind === self::CATALOG_TEACHERS) {
+                $this->saveCatalogTeachers($result['data']);
             } else {
                 $this->saveTeachers($result['data']);
             }
@@ -148,13 +163,22 @@ class SpreadsheetImport
             ];
         }
 
-        return [
+        $account = [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'alpha_dash:ascii', 'max:100'],
             'email' => ['required', 'ascii', 'email', 'max:255'],
             'bin' => ['required', 'digits:12'],
-            'subject' => ['required', 'alpha_dash:ascii', 'max:50'],
             'position_title' => ['required', 'string', 'max:150'],
+        ];
+        if ($kind === self::CATALOG_TEACHERS) {
+            return $account + [
+                'type' => ['required', Rule::in(array_keys(EducationOrganizationRegistration::TYPES))],
+                'area' => ['required', 'alpha_dash:ascii', 'max:32'],
+            ];
+        }
+
+        return $account + [
+            'subject' => ['required', 'alpha_dash:ascii', 'max:50'],
             'weekly_hours' => ['required', 'numeric', 'decimal:0,2', 'between:0.01,999.99'],
             'academic_year' => ['required', 'regex:/^[0-9]{4}$/D', 'integer', 'between:1900,9998'],
         ];
@@ -202,12 +226,7 @@ class SpreadsheetImport
             ->when($lock, fn ($query) => $query->orderBy('id')->lockForUpdate())->pluck('id', 'bin');
         $subjects = Subject::whereIn('code', array_column($rows, 'subject'))
             ->when($lock, fn ($query) => $query->orderBy('id')->lockForUpdate())->pluck('id', 'code');
-        $accounts = User::query()->where(function ($query) use ($rows) {
-            $query->whereIn(DB::raw('LOWER(username)'), array_column($rows, 'username'))
-                ->orWhereIn(DB::raw('LOWER(email)'), array_column($rows, 'email'));
-        })->get(['username', 'email']);
-        $logins = $accounts->pluck('username')->filter()->map(fn ($value) => strtolower($value))->flip();
-        $emails = $accounts->pluck('email')->map(fn ($value) => strtolower($value))->flip();
+        [$logins, $emails] = $this->existingAccounts($rows);
         $teachers = $usedEmails = $positions = $assignments = [];
 
         foreach ($rows as $number => &$row) {
@@ -249,19 +268,83 @@ class SpreadsheetImport
         unset($row);
     }
 
+    private function existingAccounts(array $rows): array
+    {
+        $accounts = User::query()->where(function ($query) use ($rows) {
+            $query->whereIn(DB::raw('LOWER(username)'), array_column($rows, 'username'))
+                ->orWhereIn(DB::raw('LOWER(email)'), array_column($rows, 'email'));
+        })->get(['username', 'email']);
+
+        return [
+            $accounts->pluck('username')->filter()->map(fn ($value) => strtolower($value))->flip(),
+            $accounts->pluck('email')->map(fn ($value) => strtolower($value))->flip(),
+        ];
+    }
+
+    private function checkCatalogTeachers(array &$rows, array &$errors, bool $lock): void
+    {
+        if (! Features::enabled(Features::resetPasswords())) {
+            throw ValidationException::withMessages(['file' => 'Педагогті тіркеу үшін құпиясөзді қалпына келтіру қызметі қосулы болуы керек.']);
+        }
+        $organizations = DB::table('education_organizations as o')
+            ->join('education_organization_types as t', 't.id', '=', 'o.type_id')
+            ->join('education_areas as a', 'a.id', '=', 'o.area_id')
+            ->whereIn('o.bin', array_column($rows, 'bin'))->where('o.is_active', true)->whereNull('o.archived_at')
+            ->when($lock, fn ($query) => $query->orderBy('o.id')->lockForUpdate())
+            ->get(['o.id', 'o.bin', 't.code as type', 'a.code as area'])->keyBy('bin');
+        [$existingLogins, $existingEmails] = $this->existingAccounts($rows);
+        $logins = $emails = [];
+        foreach ($rows as $number => &$row) {
+            $login = $row['username'];
+            $email = $row['email'];
+            if ($existingLogins->has($login) || $existingEmails->has($email)) {
+                $errors[$number][] = 'Логин немесе email дерекқорда бұрыннан бар.';
+            }
+            if (isset($logins[$login]) || isset($emails[$email])) {
+                $errors[$number][] = 'Логин немесе email файлда қайталанған.';
+            }
+            $logins[$login] = $emails[$email] = true;
+            $organization = $organizations->get($row['bin']);
+            if ($organization === null || $organization->area !== $row['area'] || $organization->type !== $row['type']) {
+                $errors[$number][] = 'БСН, түр және аумақ бойынша белсенді ұйым табылмады.';
+
+                continue;
+            }
+            $row['organization_id'] = $organization->id;
+        }
+        unset($row);
+    }
+
+    private function saveCatalogTeachers(array $rows): void
+    {
+        foreach ($rows as $row) {
+            $user = $this->createTeacher($row);
+            $placement = ['user_id' => $user->id, 'organization_id' => $row['organization_id']];
+            DB::table('education_employments')->insert($placement + [
+                'position_title' => $row['position_title'], 'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            DB::table('education_primary_workplaces')->insert($placement);
+        }
+    }
+
+    private function createTeacher(array $row): User
+    {
+        return User::create([
+            'name' => $row['name'],
+            'username' => $row['username'],
+            'email' => $row['email'],
+            'role' => UserRole::TEACHER,
+            'password' => Hash::make(bin2hex(random_bytes(32))),
+        ]);
+    }
+
     private function saveTeachers(array $rows): void
     {
         $users = $employments = [];
         foreach ($rows as $row) {
             $login = $row['username'];
             $first = ! isset($users[$login]);
-            $user = $users[$login] ??= User::create([
-                'name' => $row['name'],
-                'username' => $login,
-                'email' => $row['email'],
-                'role' => UserRole::TEACHER,
-                'password' => Hash::make(bin2hex(random_bytes(32))),
-            ]);
+            $user = $users[$login] ??= $this->createTeacher($row);
             $schoolId = $row['school_id'];
             if (! isset($employments[$login][$schoolId])) {
                 $user->schools()->attach($schoolId, ['is_primary' => $first]);
