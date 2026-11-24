@@ -3,15 +3,16 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
     BriefcaseBusiness,
+    Building2,
     FileSpreadsheet,
     FolderGit2,
     LayoutGrid,
     School,
+    ShieldCheck,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -30,7 +31,7 @@ import { index as schoolsIndex } from '@/routes/admin/schools';
 import { index as usersIndex } from '@/routes/admin/users';
 import { show as dossier } from '@/routes/dossiers';
 import { index as educationCatalog } from '@/routes/education-organizations';
-import { index as organizations } from '@/routes/organization';
+import { index as organizations, teachers } from '@/routes/organization';
 import { index as reports } from '@/routes/reports';
 import { organizationEmployment } from '@/routes/teacher';
 import { index as myEmployment } from '@/routes/teacher/employment';
@@ -40,92 +41,132 @@ const page = usePage();
 const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
 const home = computed(() => (isAdmin.value ? adminDashboard() : dashboard()));
 
-const adminNavItems: NavItem[] = [
-    { title: 'Басқару панелі', href: adminDashboard(), icon: LayoutGrid },
-    { title: 'Пайдаланушылар', href: usersIndex(), icon: Users },
-    { title: 'Мектептер', href: schoolsIndex(), icon: School },
-    { title: 'Ұйымдар', href: organizations(), icon: School },
-    { title: 'Есептер', href: reports(), icon: BookOpen },
-    { title: 'Excel импорты', href: importsIndex(), icon: FileSpreadsheet },
-];
-
-const defaultNavItems: NavItem[] = [
-    {
-        title: 'Басты бет',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
-const teacherNavItems: NavItem[] = [
-    ...defaultNavItems,
-    {
-        title: 'Менің еңбек деректерім',
-        href: myEmployment(),
-        icon: BriefcaseBusiness,
-    },
-];
-
-const mainNavItems = computed(() => {
+const navGroups = computed<{ label: string; items: NavItem[] }[]>(() => {
     const catalogItem = page.props.educationCatalogEnabled
         ? [
               {
-                  title: 'Білім беру ұйымдары',
+                  title: 'Ұйымдар каталогы',
                   href: educationCatalog(),
-                  icon: School,
+                  icon: Building2,
               },
           ]
         : [];
+    const access = {
+        title: 'Ұйымдық қолжетімділік',
+        href: organizations(),
+        icon: ShieldCheck,
+    };
+    const schoolReports = {
+        title: 'Мектеп есептері',
+        href: reports(),
+        icon: BookOpen,
+    };
+    const teacherDirectory = {
+        title: 'Педагогтер каталогы',
+        href: teachers(),
+        icon: Users,
+    };
 
     if (isAdmin.value) {
-        return [...adminNavItems, ...catalogItem];
+        return [
+            {
+                label: 'Шолу',
+                items: [
+                    {
+                        title: 'Басқару панелі',
+                        href: adminDashboard(),
+                        icon: LayoutGrid,
+                    },
+                ],
+            },
+            {
+                label: 'Білім беру ұйымдары',
+                items: [
+                    ...catalogItem,
+                    teacherDirectory,
+                    access,
+                    {
+                        title: 'Мектептерді басқару',
+                        href: schoolsIndex(),
+                        icon: School,
+                    },
+                ],
+            },
+            {
+                label: 'Әкімші құралдары',
+                items: [
+                    {
+                        title: 'Пайдаланушылар',
+                        href: usersIndex(),
+                        icon: Users,
+                    },
+                    {
+                        title: 'Мектеп және педагог импорты',
+                        href: importsIndex(),
+                        icon: FileSpreadsheet,
+                    },
+                    schoolReports,
+                ],
+            },
+        ];
     }
 
     const user = page.props.auth.user;
 
     if (user?.role === 'teacher') {
         return [
-            ...teacherNavItems,
-            ...(page.props.educationCatalogEnabled
-                ? [
-                      {
-                          title: 'Ұйымдардағы жұмыс орындарым',
-                          href: organizationEmployment(),
-                          icon: BriefcaseBusiness,
-                      },
-                  ]
-                : []),
             {
-                title: 'Менің жеке ісім',
-                href: dossier(user.id),
-                icon: FolderGit2,
+                label: 'Шолу',
+                items: [
+                    { title: 'Басты бет', href: dashboard(), icon: LayoutGrid },
+                ],
+            },
+            {
+                label: 'Педагог кабинеті',
+                items: [
+                    {
+                        title: 'Менің жеке ісім',
+                        href: dossier(user.id),
+                        icon: FolderGit2,
+                    },
+                    {
+                        title: 'Мектептегі еңбек деректерім',
+                        href: myEmployment(),
+                        icon: BriefcaseBusiness,
+                    },
+                    ...(page.props.educationCatalogEnabled
+                        ? [
+                              {
+                                  title: 'Ұйымдардағы жұмыс орындарым',
+                                  href: organizationEmployment(),
+                                  icon: Building2,
+                              },
+                          ]
+                        : []),
+                ],
             },
         ];
     }
 
     if (user?.role === 'school_admin' || user?.role === 'methodist') {
         return [
-            { title: 'Ұйымдар', href: organizations(), icon: School },
-            ...catalogItem,
-            { title: 'Есептер', href: reports(), icon: BookOpen },
+            {
+                label: 'Білім беру ұйымдары',
+                items: [...catalogItem, teacherDirectory, access],
+            },
+            { label: 'Талдау', items: [schoolReports] },
         ];
     }
 
-    return defaultNavItems;
+    return [
+        {
+            label: 'Шолу',
+            items: [
+                { title: 'Басты бет', href: dashboard(), icon: LayoutGrid },
+            ],
+        },
+    ];
 });
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Үлгі репозиторийі',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Laravel құжаттамасы',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
 </script>
 
 <template>
@@ -142,12 +183,18 @@ const footerNavItems: NavItem[] = [
             </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent>
-            <NavMain :items="mainNavItems" />
+        <SidebarContent class="gap-4 py-3">
+            <nav aria-label="Негізгі навигация" class="grid gap-4">
+                <NavMain
+                    v-for="group in navGroups"
+                    :key="group.label"
+                    :label="group.label"
+                    :items="group.items"
+                />
+            </nav>
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>

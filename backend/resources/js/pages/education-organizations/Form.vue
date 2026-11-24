@@ -61,7 +61,9 @@ function submit() {
     <section class="max-w-3xl space-y-5 p-4 md:p-6">
         <Head :title="title" />
         <Link :href="index()" class="text-sm underline">Ұйымдар каталогы</Link>
-        <h1 class="text-2xl font-semibold">{{ title }}</h1>
+        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {{ title }}
+        </h1>
         <p
             v-if="!types.length || !regions.length || !props.areas.length"
             class="text-sm"

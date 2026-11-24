@@ -8,6 +8,7 @@ use App\Models\District;
 use App\Models\School;
 use App\Models\User;
 use App\Policies\OrganizationScope;
+use App\Services\TeacherDirectory;
 use App\UserRole;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,7 @@ use Inertia\Response;
 
 class OrganizationController extends Controller
 {
-    public function index(Request $request, OrganizationScope $scope): Response
+    public function index(Request $request, OrganizationScope $scope, TeacherDirectory $directory): Response
     {
         abort_unless(in_array($request->user()->role, [UserRole::ADMIN, UserRole::SCHOOL_ADMIN, UserRole::METHODIST], true), 403);
 
@@ -29,18 +30,36 @@ class OrganizationController extends Controller
             'canManageAccess' => $request->user()->isAdmin(),
             'canManageEmployment' => $request->user()->role !== UserRole::METHODIST,
             'role' => $request->user()->role->value,
+            'statistics' => $directory->statistics($request->user()),
         ]);
     }
 
-    public function school(Request $request, School $school, OrganizationScope $scope): Response
+    public function teachers(Request $request, TeacherDirectory $directory): Response
+    {
+        abort_unless(in_array($request->user()->role, [UserRole::ADMIN, UserRole::SCHOOL_ADMIN, UserRole::METHODIST], true), 403);
+
+        return $this->teacherResults($request, $directory);
+    }
+
+    public function school(Request $request, School $school, OrganizationScope $scope, TeacherDirectory $directory): Response
     {
         abort_unless($scope->schools($request->user())->whereKey($school->id)->exists(), 403);
 
+        return $this->teacherResults($request, $directory, $school);
+    }
+
+    private function teacherResults(Request $request, TeacherDirectory $directory, ?School $school = null): Response
+    {
+        $filters = array_filter($request->validate(array_fill_keys(
+            ['name', 'organization', 'subject', 'position', 'category'],
+            ['nullable', 'string', 'max:150'],
+        )), fn (?string $value): bool => $value !== null && $value !== '');
+
         return Inertia::render('organization/Teachers', [
-            'school' => $school->only(['id', 'name']),
-            'teachers' => User::query()->where('role', UserRole::TEACHER->value)
-                ->whereHas('schools', fn ($query) => $query->whereKey($school->id))
-                ->orderBy('name')->orderBy('id')->paginate(20, ['id', 'name']),
+            'school' => $school?->only(['id', 'name']),
+            'filters' => $filters,
+            'teachers' => $directory->search($request->user(), $filters, $school?->id)
+                ->paginate(20, ['users.id', 'users.name'])->appends($filters),
         ]);
     }
 

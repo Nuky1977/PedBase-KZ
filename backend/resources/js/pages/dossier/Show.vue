@@ -181,7 +181,9 @@ const inputClass =
         <Head title="Педагогтің жеке ісі" />
         <header class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h1 class="text-2xl font-semibold">Педагогтің жеке ісі</h1>
+                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                    Педагогтің жеке ісі
+                </h1>
                 <p class="mt-1 text-muted-foreground">{{ teacher.name }}</p>
             </div>
             <div v-if="isOwn" class="flex flex-wrap gap-2">

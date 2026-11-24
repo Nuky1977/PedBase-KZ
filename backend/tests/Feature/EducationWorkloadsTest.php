@@ -42,6 +42,78 @@ beforeEach(function () {
     $this->sample = fn (string $bin, string $placement = 'secondary', string $area = 'FIXTURE-A') => [$bin, $area, $this->teacher->username, 'Test position', $placement, '2026', '4.25', 'academic_hour', 'week'];
 });
 
+it('searches approved workplaces across pages and keeps role statistics distinct', function () {
+    $first = ($this->org)('school', '000000000601');
+    $second = ($this->org)('school', '000000000602');
+    $otherType = ($this->org)('college', '000000000603');
+    $otherArea = ($this->org)('school', '000000000604');
+    $area = DB::table('education_areas')->insertGetId(['code' => 'OTHER-A', 'name' => 'Other area', 'region_id' => $this->region]);
+    DB::table('education_organizations')->where('id', $otherArea)->update(['area_id' => $area]);
+    DB::table('education_organizations')->where('id', $first)->update(['name' => 'Visible school']);
+    $schoolAdmin = User::factory()->create(['role' => UserRole::SCHOOL_ADMIN]);
+    $methodist = User::factory()->create(['role' => UserRole::METHODIST]);
+    DB::table('education_organization_admins')->insert(['user_id' => $schoolAdmin->id, 'organization_id' => $first]);
+    DB::table('education_methodist_grants')->insert([
+        'user_id' => $methodist->id, 'area_id' => $this->area,
+        'type_id' => DB::table('education_organizations')->where('id', $first)->value('type_id'),
+    ]);
+
+    $teachers = User::factory()->count(21)->sequence(fn ($sequence) => [
+        'name' => sprintf('Synthetic teacher %02d', $sequence->index),
+        'role' => UserRole::TEACHER,
+    ])->create();
+    $employment = fn (User $teacher, int $org, string $position = 'Synthetic position') => DB::table('education_employments')->insertGetId([
+        'user_id' => $teacher->id, 'organization_id' => $org, 'position_title' => $position, 'status' => 'active',
+    ]);
+    foreach ($teachers as $teacher) {
+        $employment($teacher, $first);
+    }
+    $employment($teachers->last(), $second);
+    $employment($teachers->last(), $otherType, 'Out of scope position');
+    $employment($this->teacher, $otherType);
+    $employment($this->teacher, $otherArea);
+    DB::table('education_primary_workplaces')->insert(['user_id' => $teachers->last()->id, 'organization_id' => $first]);
+    $record = DB::table('education_employments')->where('user_id', $teachers->last()->id)->where('organization_id', $first)->value('id');
+    DB::table('education_workloads')->insert([
+        'employment_id' => $record, 'academic_year' => 2026, 'amount' => 4, 'unit' => 'academic_hour',
+        'period' => 'week', 'position_title' => 'Synthetic position', 'was_primary' => true,
+        'details' => json_encode(['subject' => 'Synthetic mathematics']), 'identity' => str_repeat('a', 64),
+    ]);
+    $teachers->last()->attestations()->create(['category' => 'Synthetic category', 'awarded_on' => '2025-01-01']);
+
+    $this->actingAs($methodist)->get(route('organization.teachers', ['name' => 'Synthetic teacher', 'page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page->where('teachers.total', 21)->has('teachers.data', 1)
+            ->where('teachers.data.0.id', $teachers->last()->id)
+            ->where('teachers.prev_page_url', fn (string $url) => str_contains($url, 'name=Synthetic+teacher') || str_contains($url, 'name=Synthetic%20teacher')));
+    $this->get(route('organization.teachers', [
+        'organization' => 'Visible school', 'subject' => 'mathematics', 'position' => 'Synthetic', 'category' => 'Synthetic category',
+    ]))->assertInertia(fn (Assert $page) => $page->where('teachers.total', 1)
+        ->where('teachers.data.0.id', $teachers->last()->id)->missing('teachers.data.0.email')->missing('teachers.data.0.iin'));
+    $this->get(route('organization.teachers', ['position' => 'Out of scope']))
+        ->assertInertia(fn (Assert $page) => $page->where('teachers.total', 0));
+    $this->get(route('organization.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('statistics', ['catalog' => true, 'organizations' => 2, 'teachers' => 21, 'primary' => 1, 'secondary' => 21]));
+    $this->actingAs($schoolAdmin)->get(route('organization.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('statistics', ['catalog' => true, 'organizations' => 1, 'teachers' => 21, 'primary' => 1, 'secondary' => 20]));
+    $this->actingAs($this->admin)->get(route('admin.dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->where('analytics.placements', ['catalog' => true, 'organizations' => 4, 'teachers' => 22, 'primary' => 1, 'secondary' => 24]));
+    $this->actingAs($this->teacher)->get(route('organization.teachers'))->assertForbidden();
+    $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->where('placements', ['catalog' => true, 'primary' => 0, 'secondary' => 2]));
+});
+
+it('paginates the school management list and preserves its primary workplace flag', function () {
+    config(['pedbase.education_catalog_enabled' => false]);
+    $school = School::create(['name' => 'Synthetic school']);
+    $this->teacher->schools()->attach($school, ['is_primary' => true]);
+    $this->actingAs($this->admin)->get(route('admin.schools.teachers', [$school, 'name' => $this->teacher->name]))
+        ->assertInertia(fn (Assert $page) => $page->where('teacherCount', 1)
+            ->where('teachers.total', 1)->where('teachers.data.0.is_primary', true));
+    $this->get(route('organization.teachers', ['organization' => 'Synthetic school']))
+        ->assertInertia(fn (Assert $page) => $page->where('teachers.total', 1)
+            ->where('teachers.data.0.id', $this->teacher->id));
+});
+
 it('imports a type specific workbook after preview, protects confirmation and retains archived history', function (string $type, array $details) {
     $bin = '000000000450';
     $id = ($this->org)($type, $bin);

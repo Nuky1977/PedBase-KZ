@@ -13,9 +13,9 @@ import { request } from '@/routes/password';
 
 defineOptions({
     layout: {
-    title: 'PedBase KZ жүйесіне кіру',
-    description: 'Логин мен құпия сөзіңізді енгізіңіз',
-},
+        title: 'Жүйеге кіру',
+        description: 'Логин мен құпиясөзіңізді енгізіңіз',
+    },
 });
 
 defineProps<{
@@ -25,7 +25,7 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Log in" />
+    <Head title="Жүйеге кіру" />
 
     <div
         v-if="status"
@@ -43,58 +43,50 @@ defineProps<{
         <div class="grid gap-6">
             <div class="grid gap-2">
                 <Label for="username">Логин</Label>
-<Input
-    id="username"
-    type="text"
-    name="username"
-    required
-    autofocus
-    :tabindex="1"
-    autocomplete="username"
-    placeholder="zeynelkhan_nurlan_1"
-/>
-<InputError :message="errors.username" />
+                <Input
+                    id="username"
+                    type="text"
+                    name="username"
+                    required
+                    autofocus
+                    autocomplete="username"
+                />
+                <InputError :message="errors.username" />
             </div>
 
             <div class="grid gap-2">
-                <div class="flex items-center justify-between">
-                    <Label for="password">Password</Label>
-                    <TextLink
-                        v-if="canResetPassword"
-                        :href="request()"
-                        class="text-sm"
-                        :tabindex="5"
-                    >
-                        Forgot your password?
-                    </TextLink>
-                </div>
+                <Label for="password">Құпиясөз</Label>
                 <PasswordInput
                     id="password"
                     name="password"
                     required
-                    :tabindex="2"
                     autocomplete="current-password"
-                    placeholder="Password"
                 />
                 <InputError :message="errors.password" />
+                <TextLink
+                    v-if="canResetPassword"
+                    :href="request()"
+                    class="w-fit text-sm"
+                >
+                    Құпиясөзді ұмыттыңыз ба?
+                </TextLink>
             </div>
 
             <div class="flex items-center justify-between">
                 <Label for="remember" class="flex items-center space-x-3">
-                    <Checkbox id="remember" name="remember" :tabindex="3" />
-                    <span>Remember me</span>
+                    <Checkbox id="remember" name="remember" />
+                    <span>Мені есте сақтау</span>
                 </Label>
             </div>
 
             <Button
                 type="submit"
                 class="mt-4 w-full"
-                :tabindex="4"
                 :disabled="processing"
                 data-test="login-button"
             >
                 <Spinner v-if="processing" />
-                Log in
+                {{ processing ? 'Кіру орындалуда…' : 'Кіру' }}
             </Button>
         </div>
     </Form>

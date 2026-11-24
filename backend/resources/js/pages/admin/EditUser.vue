@@ -18,11 +18,11 @@ defineProps<{
 
     <div class="mx-auto max-w-2xl p-8">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold">
+            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
                 Пайдаланушыны өңдеу
             </h1>
 
-            <p class="mt-1 text-sm text-gray-500">
+            <p class="mt-1 text-sm text-muted-foreground">
                 Пайдаланушы мәліметтерін өзгерту
             </p>
         </div>
@@ -91,35 +91,30 @@ defineProps<{
             </div>
 
             <div>
-                <label for="role" class="mb-1 block font-medium">
-                    Рөлі
-                </label>
+                <label for="role" class="mb-1 block font-medium"> Рөлі </label>
 
                 <select
-    id="role"
-    name="role"
-    :value="user.role"
-    :disabled="isSelf"
-    required
-    class="w-full rounded-md border p-2 disabled:bg-gray-100 disabled:text-gray-500"
->
-   <option value="teacher">Педагог</option>
-<option value="school_admin">Мектеп әкімшісі</option>
-<option value="methodist">Әдіскер</option>
-<option value="admin">Жүйе әкімшісі</option>
-</select>
-<input
-    v-if="isSelf"
-    type="hidden"
-    name="role"
-    :value="user.role"
-/>
-<p
-    v-if="isSelf"
-    class="mt-1 text-sm text-gray-500"
->
-    Өз аккаунтыңыздың рөлін өзгерте алмайсыз.
-</p>
+                    id="role"
+                    name="role"
+                    :value="user.role"
+                    :disabled="isSelf"
+                    required
+                    class="w-full rounded-md border p-2 disabled:bg-gray-100 disabled:text-muted-foreground"
+                >
+                    <option value="teacher">Педагог</option>
+                    <option value="school_admin">Мектеп әкімшісі</option>
+                    <option value="methodist">Әдіскер</option>
+                    <option value="admin">Жүйе әкімшісі</option>
+                </select>
+                <input
+                    v-if="isSelf"
+                    type="hidden"
+                    name="role"
+                    :value="user.role"
+                />
+                <p v-if="isSelf" class="mt-1 text-sm text-muted-foreground">
+                    Өз аккаунтыңыздың рөлін өзгерте алмайсыз.
+                </p>
 
                 <p v-if="errors.role" class="mt-1 text-sm text-red-600">
                     {{ errors.role }}
@@ -135,10 +130,7 @@ defineProps<{
                     {{ processing ? 'Сақталуда...' : 'Өзгерістерді сақтау' }}
                 </button>
 
-                <Link
-                    href="/admin/users"
-                    class="rounded-md border px-5 py-2"
-                >
+                <Link href="/admin/users" class="rounded-md border px-5 py-2">
                     Болдырмау
                 </Link>
             </div>

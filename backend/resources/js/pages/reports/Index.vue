@@ -53,7 +53,9 @@ function applyFilters() {
     <div class="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-8">
         <Head title="Есептер мен аналитика" />
         <header class="flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-semibold">Есептер мен аналитика</h1>
+            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Есептер мен аналитика
+            </h1>
             <Button variant="outline" as-child
                 ><Link :href="organization()">Ұйымдар</Link></Button
             >

@@ -7,11 +7,11 @@ import { Form, Head } from '@inertiajs/vue3';
 
     <div class="mx-auto max-w-2xl p-8">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold">
+            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
                 Жаңа пайдаланушы қосу
             </h1>
 
-            <p class="mt-1 text-sm text-gray-500">
+            <p class="mt-1 text-sm text-muted-foreground">
                 PedBase KZ жүйесіне жаңа пайдаланушы тіркеу
             </p>
         </div>
@@ -77,9 +77,7 @@ import { Form, Head } from '@inertiajs/vue3';
             </div>
 
             <div>
-                <label for="role" class="mb-1 block font-medium">
-                    Рөлі
-                </label>
+                <label for="role" class="mb-1 block font-medium"> Рөлі </label>
 
                 <select
                     id="role"

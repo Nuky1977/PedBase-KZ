@@ -26,6 +26,7 @@ class EducationOrganizationController extends Controller
     {
         $catalog = $this->catalog($request, $scope);
         $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
             'type' => ['nullable', 'string', 'max:50', 'alpha_dash:ascii'],
             'region' => ['nullable', 'string', 'max:32', 'alpha_dash:ascii'],
             'area' => ['nullable', 'string', 'max:32', 'alpha_dash:ascii'],
@@ -37,6 +38,9 @@ class EducationOrganizationController extends Controller
         $areas = DB::table('education_areas')->whereIn('education_areas.id', $visibleAreas);
         $visibleRegions = (clone $areas)->select('region_id')->distinct();
         $organizations = $this->withDirectoryNames($catalog);
+        if (isset($filters['search'])) {
+            $organizations->whereLike('education_organizations.name', '%'.$filters['search'].'%');
+        }
         foreach (['type' => 'types.code', 'region' => 'regions.code', 'area' => 'areas.code'] as $key => $column) {
             if (isset($filters[$key])) {
                 $organizations->where($column, $filters[$key]);

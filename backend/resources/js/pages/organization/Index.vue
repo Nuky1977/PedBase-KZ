@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import WorkplaceStatistics from '@/components/WorkplaceStatistics.vue';
 import { school as employment } from '@/routes/admin/employment';
 import { access, school } from '@/routes/organization';
 import { index as reports } from '@/routes/reports';
@@ -12,10 +13,18 @@ const props = defineProps<{
         data: { id: number; name: string }[];
         prev_page_url: string | null;
         next_page_url: string | null;
+        total: number;
     };
     canManageAccess: boolean;
     canManageEmployment: boolean;
     role: 'admin' | 'school_admin' | 'methodist';
+    statistics: {
+        catalog: boolean;
+        organizations: number;
+        teachers: number;
+        primary: number;
+        secondary: number;
+    };
 }>();
 
 const titles = {
@@ -26,7 +35,7 @@ const titles = {
 </script>
 
 <template>
-    <div class="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-8">
+    <div class="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-8">
         <Head :title="titles[props.role]" />
         <header class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-semibold">{{ titles[props.role] }}</h1>
@@ -39,6 +48,7 @@ const titles = {
                 >
             </div>
         </header>
+        <WorkplaceStatistics :statistics="statistics" />
         <p v-if="!schools.data.length" class="text-muted-foreground">
             Сізге қолжетімді мектеп әлі бекітілмеген.
         </p>

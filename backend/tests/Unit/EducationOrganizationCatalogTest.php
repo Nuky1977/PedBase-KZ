@@ -57,6 +57,10 @@ it('filters organizations by type for an administrator and shows the card', func
 it('requires an exact area and organization-type grant for a methodist', function () {
     $this->actingAs(($this->catalogUser)(11, UserRole::METHODIST));
     $this->get(route('education-organizations.index'))->assertInertia(fn (Assert $page) => $page->has('organizations.data', 2));
+    $this->get(route('education-organizations.index', ['search' => 'College']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.search', 'College')->has('organizations.data', 1)
+            ->where('organizations.data.0.name', 'College B'));
     $this->get(route('education-organizations.show', 1))->assertOk();
     $this->get(route('education-organizations.show', 4))->assertOk();
     $this->get(route('education-organizations.show', 2))->assertForbidden();

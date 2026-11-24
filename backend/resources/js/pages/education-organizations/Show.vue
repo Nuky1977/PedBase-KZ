@@ -40,7 +40,9 @@ function saveStatus() {
         <Link :href="index()" class="text-sm underline"
             >Білім беру ұйымдарына қайту</Link
         >
-        <h1 class="text-2xl font-semibold">{{ organization.name }}</h1>
+        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {{ organization.name }}
+        </h1>
         <Link
             v-if="canEdit"
             :href="edit(organization.id)"

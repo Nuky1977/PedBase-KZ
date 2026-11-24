@@ -114,7 +114,9 @@ async function submit(save: boolean) {
     <section class="space-y-5 p-4 md:p-6">
         <Head title="Excel импорты" />
         <Link :href="index()" class="text-sm underline">Ұйымдар каталогы</Link>
-        <h1 class="text-2xl font-semibold">Excel импорты</h1>
+        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Excel импорты
+        </h1>
         <label class="grid max-w-sm gap-1 text-sm">
             Импорт түрі
             <select

@@ -22,7 +22,9 @@ defineProps<{
 <template>
     <section class="max-w-2xl space-y-5 p-4 md:p-6">
         <Head title="Ұйымдардағы жұмыс орындарым" />
-        <h1 class="text-2xl font-semibold">Ұйымдардағы жұмыс орындарым</h1>
+        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Ұйымдардағы жұмыс орындарым
+        </h1>
         <Link :href="reports()" class="text-sm underline"
             >Менің жүктемем және кәсіби дамуым</Link
         >

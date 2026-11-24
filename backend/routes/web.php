@@ -11,6 +11,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\Teacher\ProfileController;
 use App\Http\Controllers\TeacherDossierController;
 use App\Http\Controllers\TeacherEmploymentController;
+use App\Services\TeacherDirectory;
 use App\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,7 +20,7 @@ use Inertia\Inertia;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (Request $request) {
+    Route::get('dashboard', function (Request $request, TeacherDirectory $directory) {
         if ($request->user()->isAdmin()) {
             return to_route('admin.dashboard');
         }
@@ -28,7 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return to_route('organization.index');
         }
 
-        return Inertia::render('Dashboard');
+        return Inertia::render('Dashboard', ['placements' => $directory->personalPlacements($request->user())]);
     })->name('dashboard');
 });
 
@@ -72,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/teacher/employment', [TeacherEmploymentController::class, 'mine'])->name('teacher.employment.index');
 
     Route::get('/organization', [OrganizationController::class, 'index'])->name('organization.index');
+    Route::get('/organization/teachers', [OrganizationController::class, 'teachers'])->name('organization.teachers');
     Route::get('/organization/schools/{school}', [OrganizationController::class, 'school'])->name('organization.school');
     Route::get('/organization/access', [OrganizationController::class, 'access'])->name('organization.access');
     Route::post('/organization/access/{operation}', [OrganizationController::class, 'saveAccess'])
@@ -133,8 +135,8 @@ Route::middleware(['auth', 'school_admin'])
     ->get('/school-admin', fn () => Inertia::render('school-admin/Dashboard'))
     ->name('school-admin.dashboard');
 Route::middleware(['auth', 'teacher'])
-    ->get('/teacher', function () {
-        return Inertia::render('teacher/Dashboard');
+    ->get('/teacher', function (Request $request, TeacherDirectory $directory) {
+        return Inertia::render('teacher/Dashboard', ['placements' => $directory->personalPlacements($request->user())]);
     })
     ->name('teacher.dashboard');
 Route::middleware(['auth', 'admin'])

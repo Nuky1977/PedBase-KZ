@@ -5,6 +5,9 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
 import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
+import { Button } from '@/components/ui/button'
+import { X } from '@lucide/vue'
+import { DialogClose } from 'reka-ui'
 import { SIDEBAR_WIDTH_MOBILE, useSidebar } from "./utils"
 
 defineOptions({
@@ -41,11 +44,16 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
         '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
       }"
     >
-      <SheetHeader class="sr-only">
-        <SheetTitle>Sidebar</SheetTitle>
-        <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+      <SheetHeader class="flex-row items-center justify-between border-b px-4 py-2">
+        <SheetTitle>Навигация</SheetTitle>
+        <SheetDescription class="sr-only">Жүйе бөлімдерінің мәзірі</SheetDescription>
+        <DialogClose as-child>
+          <Button variant="ghost" size="icon" class="size-11" aria-label="Мәзірді жабу">
+            <X aria-hidden="true" />
+          </Button>
+        </DialogClose>
       </SheetHeader>
-      <div class="flex h-full w-full flex-col">
+      <div class="flex min-h-0 w-full flex-1 flex-col">
         <slot />
       </div>
     </SheetContent>

@@ -116,8 +116,9 @@ class SchoolController extends Controller
             );
     }
 
-    public function teachers(School $school): Response
+    public function teachers(Request $request, School $school): Response
     {
+        $filters = $request->validate(['name' => ['nullable', 'string', 'max:150']]);
         $attachedTeacherIds = $school->users()
             ->where('role', UserRole::TEACHER->value)
             ->pluck('users.id');
@@ -128,6 +129,8 @@ class SchoolController extends Controller
                 'name',
                 'short_name',
             ]),
+            'filters' => ['name' => $filters['name'] ?? ''],
+            'teacherCount' => $attachedTeacherIds->count(),
 
             'teachers' => $school->users()
                 ->where('role', UserRole::TEACHER->value)
@@ -137,9 +140,10 @@ class SchoolController extends Controller
                     'users.username',
                     'users.email'
                 )
-                ->orderBy('users.name')
-                ->get()
-                ->map(fn ($teacher) => [
+                ->when(isset($filters['name']), fn ($query) => $query->whereLike('users.name', '%'.$filters['name'].'%'))
+                ->orderBy('users.name')->orderBy('users.id')
+                ->paginate(20)->appends($filters)
+                ->through(fn ($teacher) => [
                     'id' => $teacher->id,
                     'name' => $teacher->name,
                     'username' => $teacher->username,

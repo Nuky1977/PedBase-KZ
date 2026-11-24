@@ -2,17 +2,24 @@
 import { Head, Link } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
+    Activity,
+    Building2,
     BriefcaseBusiness,
     GraduationCap,
     Link2,
     School,
     Users,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import WorkplaceStatistics from '@/components/WorkplaceStatistics.vue';
 import { dashboard } from '@/routes/admin';
+import { index as importsIndex } from '@/routes/admin/imports';
 import { index as schoolsIndex } from '@/routes/admin/schools';
 import { index as usersIndex } from '@/routes/admin/users';
+import { index as catalogIndex } from '@/routes/education-organizations';
+import { index as reportsIndex } from '@/routes/reports';
 
 defineOptions({
     layout: {
@@ -30,7 +37,21 @@ type Stats = {
     secondaryAssignments: number;
 };
 
-defineProps<{ stats: Stats }>();
+const props = defineProps<{
+    stats: Stats;
+    analytics: {
+        catalogOrganizations: number | null;
+        placements: {
+            catalog: boolean;
+            organizations: number;
+            teachers: number;
+            primary: number;
+            secondary: number;
+        };
+        workloadByYear: { year: number; hours: number }[];
+        recentActivities: { action: string; created_at: string }[];
+    };
+}>();
 
 const overview = [
     { key: 'schools', label: 'Барлық мектеп', icon: School },
@@ -52,6 +73,25 @@ const assignments = [
 ] as const;
 
 const numberFormat = new Intl.NumberFormat('kk-KZ');
+const maxHours = computed(() =>
+    Math.max(1, ...props.analytics.workloadByYear.map((item) => item.hours)),
+);
+
+const activityLabels: Record<string, string> = {
+    'organization.assign': 'Ұйымға бекіту жаңартылды',
+    'employment.save': 'Еңбек деректері сақталды',
+    'assignment.create': 'Жүктеме қосылды',
+    'assignment.update': 'Жүктеме жаңартылды',
+    'spreadsheet.import.schools': 'Мектептер импортталды',
+    'spreadsheet.import.teachers': 'Педагогтер импортталды',
+};
+
+const quickActions = [
+    { label: 'Мектептер', href: schoolsIndex() },
+    { label: 'Пайдаланушылар', href: usersIndex() },
+    { label: 'Excel импорты', href: importsIndex() },
+    { label: 'Есептер', href: reportsIndex() },
+];
 </script>
 
 <template>
@@ -94,15 +134,22 @@ const numberFormat = new Intl.NumberFormat('kk-KZ');
                 <h2 id="overview-heading" class="text-lg font-semibold">
                     Жалпы көрсеткіштер
                 </h2>
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                    class="grid gap-3 sm:grid-cols-2"
+                    :class="
+                        analytics.catalogOrganizations === null
+                            ? 'xl:grid-cols-4'
+                            : 'xl:grid-cols-5'
+                    "
+                >
                     <Card
                         v-for="metric in overview"
                         :key="metric.key"
                         class="gap-0 py-0 shadow-xs"
                     >
-                        <CardContent class="flex items-center gap-4 p-4 sm:p-5">
+                        <CardContent class="flex items-center gap-3 p-4">
                             <div
-                                class="rounded-xl bg-sky-50 p-2.5 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                                class="shrink-0 rounded-xl bg-blue-50 p-2.5 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                             >
                                 <component
                                     :is="metric.icon"
@@ -122,9 +169,154 @@ const numberFormat = new Intl.NumberFormat('kk-KZ');
                             </dl>
                         </CardContent>
                     </Card>
+                    <Card
+                        v-if="analytics.catalogOrganizations !== null"
+                        class="gap-0 py-0 shadow-xs"
+                    >
+                        <CardContent class="flex items-center gap-4 p-4 sm:p-5">
+                            <Building2
+                                class="size-9 shrink-0 rounded-lg bg-blue-100 p-2 text-blue-800"
+                                aria-hidden="true"
+                            />
+                            <dl>
+                                <dt class="text-sm text-muted-foreground">
+                                    Каталогтағы ұйымдар
+                                </dt>
+                                <dd class="text-3xl font-semibold tabular-nums">
+                                    {{
+                                        numberFormat.format(
+                                            analytics.catalogOrganizations,
+                                        )
+                                    }}
+                                </dd>
+                            </dl>
+                        </CardContent>
+                    </Card>
                 </div>
             </section>
 
+            <div
+                class="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+            >
+                <section
+                    class="min-w-0 rounded-xl border bg-card p-4 sm:p-5"
+                    aria-labelledby="workload-heading"
+                >
+                    <h2 id="workload-heading" class="text-lg font-semibold">
+                        Оқу жылдары бойынша мектеп жүктемесі
+                    </h2>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        Белсенді еңбек жазбаларындағы апталық сағаттар жиыны
+                    </p>
+                    <p
+                        v-if="!analytics.workloadByYear.length"
+                        class="mt-5 text-sm text-muted-foreground"
+                    >
+                        Жүктеме деректері жоқ.
+                    </p>
+                    <ul v-else class="mt-5 space-y-4">
+                        <li
+                            v-for="item in analytics.workloadByYear"
+                            :key="item.year"
+                        >
+                            <div
+                                class="mb-1 flex flex-wrap justify-between gap-2 text-sm"
+                            >
+                                <span>{{ item.year }}–{{ item.year + 1 }}</span>
+                                <span class="font-semibold tabular-nums"
+                                    >{{
+                                        numberFormat.format(item.hours)
+                                    }}
+                                    сағ</span
+                                >
+                            </div>
+                            <div
+                                class="h-2 overflow-hidden rounded-full bg-muted"
+                                aria-hidden="true"
+                            >
+                                <div
+                                    class="h-full rounded-full bg-blue-600"
+                                    :style="{
+                                        width: `${(item.hours / maxHours) * 100}%`,
+                                    }"
+                                />
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+                <section
+                    class="min-w-0 rounded-xl border bg-card p-4 sm:p-5"
+                    aria-labelledby="activity-heading"
+                >
+                    <h2 id="activity-heading" class="text-lg font-semibold">
+                        Соңғы әрекеттер
+                    </h2>
+                    <p
+                        v-if="!analytics.recentActivities.length"
+                        class="mt-5 text-sm text-muted-foreground"
+                    >
+                        Әрекет тіркелмеген.
+                    </p>
+                    <ul v-else class="mt-2 divide-y">
+                        <li
+                            v-for="(item, index) in analytics.recentActivities"
+                            :key="index"
+                            class="flex items-start gap-3 py-3"
+                        >
+                            <Activity
+                                class="mt-1 size-4 shrink-0 text-blue-600"
+                                aria-hidden="true"
+                            />
+                            <div>
+                                <p class="text-sm font-medium">
+                                    {{ activityLabels[item.action] }}
+                                </p>
+                                <p class="text-xs text-muted-foreground">
+                                    {{ item.created_at.slice(0, 16) }}
+                                </p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+            <section
+                class="rounded-xl border bg-card p-4 sm:p-5"
+                aria-labelledby="quick-actions"
+            >
+                <h2 id="quick-actions" class="mb-3 text-lg font-semibold">
+                    Жылдам әрекеттер
+                </h2>
+                <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                    <Button
+                        v-for="action in quickActions"
+                        :key="action.label"
+                        variant="outline"
+                        class="min-h-11 justify-between"
+                        as-child
+                    >
+                        <Link :href="action.href"
+                            >{{ action.label }}
+                            <ArrowUpRight aria-hidden="true"
+                        /></Link>
+                    </Button>
+                    <Button
+                        v-if="analytics.catalogOrganizations !== null"
+                        variant="outline"
+                        class="min-h-11 justify-between"
+                        as-child
+                    >
+                        <Link :href="catalogIndex()"
+                            >Ұйымдар каталогы <ArrowUpRight aria-hidden="true"
+                        /></Link>
+                    </Button>
+                </div>
+            </section>
+
+            <WorkplaceStatistics
+                v-if="analytics.placements.catalog"
+                :statistics="analytics.placements"
+            />
             <section aria-labelledby="assignments-heading" class="space-y-3">
                 <h2
                     id="assignments-heading"

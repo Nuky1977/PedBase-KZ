@@ -118,7 +118,9 @@ function filter() {
 <template>
     <section class="space-y-5 p-4 md:p-6">
         <Head title="Каталог есептері" />
-        <h1 class="text-2xl font-semibold">Каталог есептері</h1>
+        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Каталог есептері
+        </h1>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="filter">
             <label class="grid gap-1 text-sm"
                 >Есеп
