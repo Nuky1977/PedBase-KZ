@@ -183,6 +183,6 @@ class SpreadsheetImportReader
 
     private function invalid(string $message): never
     {
-        throw ValidationException::withMessages(['file' => $message]);
+        throw ValidationException::withMessages(['file' => __($message)]);
     }
 }

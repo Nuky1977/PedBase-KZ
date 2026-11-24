@@ -12,6 +12,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/composables/useTranslation';
 import {
     create,
     index,
@@ -20,6 +21,8 @@ import {
 } from '@/routes/education-organizations';
 import { index as imports } from '@/routes/education-organizations/imports';
 import { index as reports } from '@/routes/education-organizations/reports';
+
+const { t } = useTranslation();
 
 const props = defineProps<{
     showTemplates: boolean;
@@ -46,28 +49,28 @@ const props = defineProps<{
 }>();
 
 const draftTemplates = [
-    { code: 'school', name: 'Мектеп' },
-    { code: 'college', name: 'Колледж' },
-    { code: 'preschool', name: 'Балабақша' },
-    { code: 'supplementary', name: 'Қосымша білім беру' },
-    { code: 'special', name: 'Арнайы білім беру' },
+    { code: 'school', name: t('Мектеп') },
+    { code: 'college', name: t('Колледж') },
+    { code: 'preschool', name: t('Балабақша') },
+    { code: 'supplementary', name: t('Қосымша білім беру') },
+    { code: 'special', name: t('Арнайы білім беру') },
 ];
 
 type Filter = 'type' | 'region' | 'area' | 'status';
 
 const statuses = {
     active: {
-        label: 'Белсенді',
+        label: t('Белсенді'),
         classes:
             'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200',
     },
     inactive: {
-        label: 'Белсенді емес',
+        label: t('Белсенді емес'),
         classes:
             'bg-amber-100 text-amber-950 dark:bg-amber-950 dark:text-amber-200',
     },
     archived: {
-        label: 'Мұрағатталған',
+        label: t('Мұрағатталған'),
         classes:
             'bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-slate-100',
     },
@@ -100,25 +103,30 @@ const fields = computed<
         items: { code: string; name: string }[];
     }[]
 >(() => [
-    { key: 'type', label: 'Ұйым түрі', all: 'Барлық түрі', items: props.types },
+    {
+        key: 'type',
+        label: t('Ұйым түрі'),
+        all: t('Барлық түрі'),
+        items: props.types,
+    },
     {
         key: 'region',
-        label: 'Облыс немесе қала',
-        all: 'Барлық облыс пен қала',
+        label: t('Облыс немесе қала'),
+        all: t('Барлық облыс пен қала'),
         items: props.regions,
     },
     {
         key: 'area',
-        label: 'Аудан немесе қала',
-        all: 'Барлық аудан мен қала',
+        label: t('Аудан немесе қала'),
+        all: t('Барлық аудан мен қала'),
         items: props.areas.filter(
             (area) => !form.region || area.region_code === form.region,
         ),
     },
     {
         key: 'status',
-        label: 'Мәртебе',
-        all: 'Барлық мәртебе',
+        label: t('Мәртебе'),
+        all: t('Барлық мәртебе'),
         items: Object.entries(statuses).map(([code, status]) => ({
             code,
             name: status.label,
@@ -137,8 +145,9 @@ function filter(reset = false) {
     loading.value = true;
     error.value = '';
     const fail = () => {
-        error.value =
-            'Ұйымдар тізімін жаңарту мүмкін болмады. Қайталап көріңіз.';
+        error.value = t(
+            'Ұйымдар тізімін жаңарту мүмкін болмады. Қайталап көріңіз.',
+        );
 
         return false;
     };
@@ -173,7 +182,7 @@ function filter(reset = false) {
     <section
         class="mx-auto w-full max-w-7xl min-w-0 space-y-6 px-3 py-4 sm:px-6 lg:py-7"
     >
-        <Head title="Білім беру ұйымдары" />
+        <Head :title="t('Білім беру ұйымдары')" />
         <header
             class="flex flex-col gap-5 rounded-2xl border border-border bg-card p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between"
         >
@@ -186,11 +195,11 @@ function filter(reset = false) {
                 <h1
                     class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl"
                 >
-                    Білім беру ұйымдары
+                    {{ t('Білім беру ұйымдары') }}
                 </h1>
             </div>
             <nav
-                aria-label="Каталог әрекеттері"
+                :aria-label="t('Каталог әрекеттері')"
                 class="flex flex-wrap gap-2 max-sm:[&>a]:w-full"
             >
                 <Button
@@ -199,7 +208,7 @@ function filter(reset = false) {
                     class="min-h-11 bg-blue-800 text-white hover:bg-blue-900 dark:bg-blue-300 dark:text-blue-950 dark:hover:bg-blue-200"
                 >
                     <Link :href="create()"
-                        ><Plus aria-hidden="true" /> Ұйым қосу</Link
+                        ><Plus aria-hidden="true" /> {{ t('Ұйым қосу') }}</Link
                     >
                 </Button>
                 <Button
@@ -208,11 +217,12 @@ function filter(reset = false) {
                     variant="outline"
                     class="min-h-11"
                 >
-                    <Link :href="imports()">Excel импорты</Link>
+                    <Link :href="imports()">{{ t('Excel импорты') }}</Link>
                 </Button>
                 <Button as-child variant="outline" class="min-h-11">
                     <Link :href="reports()"
-                        >Каталог есептері <ArrowUpRight aria-hidden="true"
+                        >{{ t('Каталог есептері') }}
+                        <ArrowUpRight aria-hidden="true"
                     /></Link>
                 </Button>
             </nav>
@@ -223,7 +233,8 @@ function filter(reset = false) {
                 id="catalog-filters"
                 class="mb-4 flex items-center gap-2 text-base font-semibold"
             >
-                <SlidersHorizontal class="size-4" aria-hidden="true" /> Сүзгілер
+                <SlidersHorizontal class="size-4" aria-hidden="true" />
+                {{ t('Сүзгілер') }}
             </h2>
             <form
                 aria-labelledby="catalog-filters"
@@ -234,7 +245,7 @@ function filter(reset = false) {
                     <label
                         for="organization-search"
                         class="mb-1.5 block text-sm font-medium"
-                        >Ұйым атауы бойынша іздеу</label
+                        >{{ t('Ұйым атауы бойынша іздеу') }}</label
                     >
                     <Input
                         id="organization-search"
@@ -270,8 +281,11 @@ function filter(reset = false) {
                 <div
                     class="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-4"
                 >
-                    <Button type="submit" :disabled="loading" class="min-h-11"
-                        >Сүзгіні қолдану</Button
+                    <Button
+                        type="submit"
+                        :disabled="loading"
+                        class="min-h-11"
+                        >{{ t('Сүзгіні қолдану') }}</Button
                     >
                     <Button
                         v-if="hasFilters || Object.values(form).some(Boolean)"
@@ -281,7 +295,7 @@ function filter(reset = false) {
                         class="min-h-11"
                         @click="filter(true)"
                     >
-                        Сүзгіні тазарту
+                        {{ t('Сүзгіні тазарту') }}
                     </Button>
                 </div>
             </form>
@@ -290,7 +304,7 @@ function filter(reset = false) {
                 class="mt-3 text-sm text-muted-foreground"
                 role="status"
             >
-                Ұйымдар жүктелуде…
+                {{ t('Ұйымдар жүктелуде…') }}
             </p>
             <p
                 v-if="error"
@@ -306,7 +320,9 @@ function filter(reset = false) {
             :aria-busy="loading"
             class="space-y-3"
         >
-            <h2 id="catalog-results" class="text-lg font-semibold">Ұйымдар</h2>
+            <h2 id="catalog-results" class="text-lg font-semibold">
+                {{ t('Ұйымдар') }}
+            </h2>
             <div
                 v-if="!organizations.data.length"
                 class="grid justify-items-center gap-3 rounded-2xl border border-dashed bg-card p-7 text-center sm:p-10"
@@ -318,8 +334,8 @@ function filter(reset = false) {
                 <p class="font-semibold">
                     {{
                         hasFilters
-                            ? 'Сүзгіге сәйкес ұйым жоқ'
-                            : 'Қолжетімді ұйымдар жоқ'
+                            ? t('Сүзгіге сәйкес ұйым жоқ')
+                            : t('Қолжетімді ұйымдар жоқ')
                     }}
                 </p>
                 <Button
@@ -328,10 +344,10 @@ function filter(reset = false) {
                     variant="outline"
                     :disabled="loading"
                     @click="filter(true)"
-                    >Барлық ұйымды көрсету</Button
+                    >{{ t('Барлық ұйымды көрсету') }}</Button
                 >
                 <Button v-else-if="showTemplates" as-child variant="outline"
-                    ><Link :href="create()">Ұйым қосу</Link></Button
+                    ><Link :href="create()">{{ t('Ұйым қосу') }}</Link></Button
                 >
             </div>
             <ul v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -405,7 +421,7 @@ function filter(reset = false) {
             <summary
                 class="flex cursor-pointer items-center justify-between gap-2 rounded-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
             >
-                Еңбек деректерінің жобалық XLSX үлгілері
+                {{ t('Еңбек деректерінің жобалық XLSX үлгілері') }}
                 <ArrowDown
                     class="size-4 shrink-0 group-open:rotate-180"
                     aria-hidden="true"

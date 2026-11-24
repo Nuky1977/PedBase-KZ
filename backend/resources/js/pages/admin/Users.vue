@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 
 const page = usePage<{
     flash: {
@@ -8,16 +11,22 @@ const page = usePage<{
 }>();
 const roleLabel = (role: string): string => {
     const labels: Record<string, string> = {
-        admin: 'Жүйе әкімшісі',
-        methodist: 'Әдіскер',
-        school_admin: 'Мектеп әкімшісі',
-        teacher: 'Педагог',
+        admin: t('Жүйе әкімшісі'),
+        methodist: t('Әдіскер'),
+        school_admin: t('Мектеп әкімшісі'),
+        teacher: t('Педагог'),
     };
 
     return labels[role] ?? role;
 };
 const deleteUser = (user: { id: number; name: string }) => {
-    if (!confirm(`${user.name} пайдаланушысын өшіруге сенімдісіз бе?`)) {
+    if (
+        !confirm(
+            t(':name пайдаланушысын өшіруге сенімдісіз бе?', {
+                name: user.name,
+            }),
+        )
+    ) {
         return;
     }
 
@@ -37,19 +46,19 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Пайдаланушылар" />
+    <Head :title="t('Пайдаланушылар')" />
 
     <div class="p-8">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                PedBase KZ — Пайдаланушылар
+                {{ t('PedBase KZ — Пайдаланушылар') }}
             </h1>
 
             <Link
                 href="/admin/users/create"
                 class="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
             >
-                + Пайдаланушы қосу
+                {{ t('+ Пайдаланушы қосу') }}
             </Link>
         </div>
         <div
@@ -62,10 +71,10 @@ defineProps<{
             <table class="w-full">
                 <thead class="bg-muted/40">
                     <tr>
-                        <th class="p-3 text-left">Аты-жөні</th>
-                        <th class="p-3 text-left">Логин</th>
-                        <th class="p-3 text-left">Рөлі</th>
-                        <th class="p-3 text-left">Email</th>
+                        <th class="p-3 text-left">{{ t('Аты-жөні') }}</th>
+                        <th class="p-3 text-left">{{ t('Логин') }}</th>
+                        <th class="p-3 text-left">{{ t('Рөлі') }}</th>
+                        <th class="p-3 text-left">{{ t('Email') }}</th>
                     </tr>
                 </thead>
 
@@ -81,7 +90,7 @@ defineProps<{
                                     :href="`/admin/users/${user.id}/edit`"
                                     class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
                                 >
-                                    Өңдеу
+                                    {{ t('Өңдеу') }}
                                 </Link>
 
                                 <button
@@ -92,7 +101,7 @@ defineProps<{
                                     class="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                                     @click="deleteUser(user)"
                                 >
-                                    Өшіру
+                                    {{ t('Өшіру') }}
                                 </button>
                             </div>
                         </td>

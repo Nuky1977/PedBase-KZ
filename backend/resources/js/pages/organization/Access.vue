@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/composables/useTranslation';
 import { index } from '@/routes/organization';
 import { save } from '@/routes/organization/access';
+
+const { t } = useTranslation();
 
 type Page<T> = {
     data: T[];
@@ -33,15 +36,19 @@ const selectClass =
 
 <template>
     <div class="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-8">
-        <Head title="Ұйымдық өкілеттіктер" />
+        <Head :title="t('Ұйымдық өкілеттіктер')" />
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-semibold">Ұйымдық өкілеттіктер</h1>
+            <h1 class="text-2xl font-semibold">
+                {{ t('Ұйымдық өкілеттіктер') }}
+            </h1>
             <Button variant="outline" as-child
-                ><Link :href="index()">Ұйымдар</Link></Button
+                ><Link :href="index()">{{ t('Ұйымдар') }}</Link></Button
             >
         </div>
         <Card>
-            <CardHeader><CardTitle>Аудан қосу</CardTitle></CardHeader>
+            <CardHeader
+                ><CardTitle>{{ t('Аудан қосу') }}</CardTitle></CardHeader
+            >
             <CardContent>
                 <Form
                     v-bind="save.form('district')"
@@ -49,7 +56,7 @@ const selectClass =
                     v-slot="{ errors, processing }"
                     class="space-y-2"
                 >
-                    <Label for="district-name">Аудан атауы</Label>
+                    <Label for="district-name">{{ t('Аудан атауы') }}</Label>
                     <div class="flex flex-wrap gap-2">
                         <Input
                             id="district-name"
@@ -58,17 +65,19 @@ const selectClass =
                             maxlength="150"
                             class="w-full sm:w-72"
                         />
-                        <Button :disabled="processing">Қосу</Button>
+                        <Button :disabled="processing">{{ t('Қосу') }}</Button>
                     </div>
                     <InputError :message="errors.name" />
                 </Form>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader><CardTitle>Мектептің ауданы</CardTitle></CardHeader>
+            <CardHeader
+                ><CardTitle>{{ t('Мектептің ауданы') }}</CardTitle></CardHeader
+            >
             <CardContent class="space-y-3">
                 <p v-if="!schools.data.length" class="text-muted-foreground">
-                    Мектеп тіркелмеген.
+                    {{ t('Мектеп тіркелмеген.') }}
                 </p>
                 <Form
                     v-for="item in schools.data"
@@ -94,7 +103,9 @@ const selectClass =
                             :value="item.district_id ?? ''"
                             :class="selectClass"
                         >
-                            <option value="">Аудан бекітілмеген</option>
+                            <option value="">
+                                {{ t('Аудан бекітілмеген') }}
+                            </option>
                             <option
                                 v-for="district in districts"
                                 :key="district.id"
@@ -107,7 +118,7 @@ const selectClass =
                             size="sm"
                             variant="outline"
                             :disabled="processing"
-                            >Сақтау</Button
+                            >{{ t('Сақтау') }}</Button
                         >
                     </div>
                     <InputError
@@ -118,11 +129,13 @@ const selectClass =
         </Card>
         <Card>
             <CardHeader
-                ><CardTitle>Қызметкердің қолжетімділігі</CardTitle></CardHeader
+                ><CardTitle>{{
+                    t('Қызметкердің қолжетімділігі')
+                }}</CardTitle></CardHeader
             >
             <CardContent class="space-y-3">
                 <p v-if="!staff.data.length" class="text-muted-foreground">
-                    Мектеп әкімшісі немесе әдіскер тіркелмеген.
+                    {{ t('Мектеп әкімшісі немесе әдіскер тіркелмеген.') }}
                 </p>
                 <Form
                     v-for="person in staff.data"
@@ -144,8 +157,8 @@ const selectClass =
                             >{{ person.name }} ·
                             {{
                                 person.role === 'school_admin'
-                                    ? 'Мектеп әкімшісі'
-                                    : 'Әдіскер'
+                                    ? t('Мектеп әкімшісі')
+                                    : t('Әдіскер')
                             }}</Label
                         >
                         <input
@@ -167,7 +180,9 @@ const selectClass =
                             "
                             :class="selectClass"
                         >
-                            <option value="">Өкілеттік бекітілмеген</option>
+                            <option value="">
+                                {{ t('Өкілеттік бекітілмеген') }}
+                            </option>
                             <option
                                 v-for="scope in person.role === 'school_admin'
                                     ? schoolOptions
@@ -182,7 +197,7 @@ const selectClass =
                             size="sm"
                             variant="outline"
                             :disabled="processing"
-                            >Сақтау</Button
+                            >{{ t('Сақтау') }}</Button
                         >
                     </div>
                     <InputError

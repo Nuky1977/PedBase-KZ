@@ -114,9 +114,9 @@ class OrganizationController extends Controller
             if ($operation !== 'district') {
                 throw $exception;
             }
-            throw ValidationException::withMessages(['name' => 'Бұл аудан атауы бұрыннан тіркелген.']);
+            throw ValidationException::withMessages(['name' => __('Бұл аудан атауы бұрыннан тіркелген.')]);
         }
 
-        return back()->with('success', 'Өкілеттік деректері сақталды.');
+        return back()->with('success', __('Өкілеттік деректері сақталды.'));
     }
 }

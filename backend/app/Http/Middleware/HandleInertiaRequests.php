@@ -38,13 +38,14 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'locale' => app()->getLocale(),
             'educationCatalogEnabled' => config('pedbase.education_catalog_enabled'),
             'auth' => [
                 'user' => $request->user(),
             ],
             'flash' => fn () => [
-    'success' => $request->session()->get('success'),
-],
+                'success' => $request->session()->get('success'),
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/composables/useTranslation';
 import { edit, index, status } from '@/routes/education-organizations';
 import { index as reports } from '@/routes/education-organizations/reports';
+
+const { t } = useTranslation();
 
 type Status = 'active' | 'inactive' | 'archived';
 
@@ -23,9 +26,9 @@ const props = defineProps<{
 }>();
 
 const labels: Record<Status, string> = {
-    active: 'Белсенді',
-    inactive: 'Белсенді емес',
-    archived: 'Мұрағатталған',
+    active: t('Белсенді'),
+    inactive: t('Белсенді емес'),
+    archived: t('Мұрағатталған'),
 };
 const form = useForm({ status: props.organization.status });
 
@@ -37,9 +40,9 @@ function saveStatus() {
 <template>
     <section class="max-w-2xl space-y-5 p-4 md:p-6">
         <Head :title="organization.name" />
-        <Link :href="index()" class="text-sm underline"
-            >Білім беру ұйымдарына қайту</Link
-        >
+        <Link :href="index()" class="text-sm underline">{{
+            t('Білім беру ұйымдарына қайту')
+        }}</Link>
         <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
             {{ organization.name }}
         </h1>
@@ -48,36 +51,44 @@ function saveStatus() {
             :href="edit(organization.id)"
             class="text-sm underline"
         >
-            Ұйымды өңдеу
+            {{ t('Ұйымды өңдеу') }}
         </Link>
         <Link
             :href="reports({ query: { organization_id: organization.id } })"
             class="text-sm underline"
         >
-            Ұйым есептері
+            {{ t('Ұйым есептері') }}
         </Link>
         <dl class="grid gap-3 rounded-lg border p-4">
             <div v-if="organization.short_name">
-                <dt class="text-sm text-muted-foreground">Қысқаша атауы</dt>
+                <dt class="text-sm text-muted-foreground">
+                    {{ t('Қысқаша атауы') }}
+                </dt>
                 <dd>{{ organization.short_name }}</dd>
             </div>
             <div>
-                <dt class="text-sm text-muted-foreground">БСН</dt>
+                <dt class="text-sm text-muted-foreground">{{ t('БСН') }}</dt>
                 <dd>{{ organization.bin }}</dd>
             </div>
             <div>
-                <dt class="text-sm text-muted-foreground">Ұйым түрі</dt>
+                <dt class="text-sm text-muted-foreground">
+                    {{ t('Ұйым түрі') }}
+                </dt>
                 <dd>{{ organization.type_name }}</dd>
             </div>
             <div>
-                <dt class="text-sm text-muted-foreground">Әкімшілік аумақ</dt>
+                <dt class="text-sm text-muted-foreground">
+                    {{ t('Әкімшілік аумақ') }}
+                </dt>
                 <dd>
                     {{ organization.region_name }} ·
                     {{ organization.area_name }} · {{ organization.locality }}
                 </dd>
             </div>
             <div>
-                <dt class="text-sm text-muted-foreground">Мәртебесі</dt>
+                <dt class="text-sm text-muted-foreground">
+                    {{ t('Мәртебесі') }}
+                </dt>
                 <dd>
                     {{ labels[organization.status] }}
                 </dd>
@@ -88,9 +99,9 @@ function saveStatus() {
             class="space-y-2"
             @submit.prevent="saveStatus"
         >
-            <label class="block text-sm" for="organization-status"
-                >Жаңа мәртебе</label
-            >
+            <label class="block text-sm" for="organization-status">{{
+                t('Жаңа мәртебе')
+            }}</label>
             <select
                 id="organization-status"
                 v-model="form.status"
@@ -116,13 +127,13 @@ function saveStatus() {
                 v-if="form.status === 'archived'"
                 class="text-sm text-muted-foreground"
             >
-                Еңбек жазбалары мен тарихи деректер сақталады.
+                {{ t('Еңбек жазбалары мен тарихи деректер сақталады.') }}
             </p>
             <Button
                 :disabled="
                     form.processing || form.status === organization.status
                 "
-                >Мәртебені сақтау</Button
+                >{{ t('Мәртебені сақтау') }}</Button
             >
         </form>
     </section>

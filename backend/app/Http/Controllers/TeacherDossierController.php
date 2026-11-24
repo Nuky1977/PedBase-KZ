@@ -78,7 +78,7 @@ class TeacherDossierController extends Controller
 
         $this->removeFile($path);
 
-        return back()->with('success', 'Жазба алынып тасталды.');
+        return back()->with('success', __('Жазба алынып тасталды.'));
     }
 
     public function certificate(Request $request, User $teacher, int $course, TeacherDossierPolicy $policy): StreamedResponse
@@ -118,7 +118,7 @@ class TeacherDossierController extends Controller
         $upload = $request->validated('certificate');
         $path = $upload?->store($kind === 'achievements' ? 'achievements' : 'certificates', 'teacher-documents');
         if ($path === false) {
-            throw ValidationException::withMessages(['certificate' => 'Құжатты сақтау мүмкін болмады.']);
+            throw ValidationException::withMessages(['certificate' => __('Құжатты сақтау мүмкін болмады.')]);
         }
 
         try {
@@ -140,14 +140,14 @@ class TeacherDossierController extends Controller
         } catch (Throwable $exception) {
             $this->removeFile($path ?: null);
             if ($exception instanceof UniqueConstraintViolationException && $kind === 'attestations') {
-                throw ValidationException::withMessages(['awarded_on' => 'Бұл күнге аттестаттау жазбасы бұрыннан тіркелген.']);
+                throw ValidationException::withMessages(['awarded_on' => __('Бұл күнге аттестаттау жазбасы бұрыннан тіркелген.')]);
             }
             throw $exception;
         }
 
         $this->removeFile($oldPath);
 
-        return back()->with('success', 'Жазба сақталды.');
+        return back()->with('success', __('Жазба сақталды.'));
     }
 
     private function documentColumn(string $kind): ?string

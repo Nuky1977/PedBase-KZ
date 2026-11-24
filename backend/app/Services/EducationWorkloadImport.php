@@ -40,13 +40,13 @@ class EducationWorkloadImport
 
     public function template(string $type, SpreadsheetExport $export): string
     {
-        return $export->xlsx([array_values($this->columns($type))], [
-            ['Ұйым түрі: '.$type],
-            ['Тіркелген педагог логинін пайдаланыңыз. Жұмыс орны: primary немесе secondary.'],
-            ['Өлшем: academic_hour, clock_hour немесе fte. Кезең: week немесе academic_year.'],
-            ['Қосымша білім беру жүктемесі үшін week қолданыңыз.'],
-            ['БСН мен аумақ кодын мәтін түрінде енгізіңіз. 100 жолға дейін.'],
-            ['Мамандық және біліктілік кодтарын бекітілген дереккөзден алыңыз. Құпия ақпаратты енгізбеңіз.'],
+        return $export->xlsx([array_values(SpreadsheetLabels::translate($this->columns($type)))], [
+            [__('Ұйым түрі: :type', ['type' => $type])],
+            [__('Тіркелген педагог логинін пайдаланыңыз. Жұмыс орны: primary немесе secondary.')],
+            [__('Өлшем: academic_hour, clock_hour немесе fte. Кезең: week немесе academic_year.')],
+            [__('Қосымша білім беру жүктемесі үшін week қолданыңыз.')],
+            [__('БСН мен аумақ кодын мәтін түрінде енгізіңіз. 100 жолға дейін.')],
+            [__('Мамандық және біліктілік кодтарын бекітілген дереккөзден алыңыз. Құпия ақпаратты енгізбеңіз.')],
         ]);
     }
 
@@ -55,12 +55,13 @@ class EducationWorkloadImport
         $columns = $this->columns($type);
         $sheet = $this->reader->read($path, count($columns));
         $header = $sheet[1] ?? [];
-        if (count($header) !== count($columns) || count(array_unique($header)) !== count($columns) || array_diff($header, $columns)) {
-            throw ValidationException::withMessages(['file' => 'Таңдалған ұйым түрінің XLSX үлгісіндегі бағандарды пайдаланыңыз.']);
+        $columns = SpreadsheetLabels::matchHeader($columns, $header);
+        if ($columns === null) {
+            throw ValidationException::withMessages(['file' => __('Таңдалған ұйым түрінің XLSX үлгісіндегі бағандарды пайдаланыңыз.')]);
         }
         unset($sheet[1]);
         if ($sheet === []) {
-            throw ValidationException::withMessages(['file' => 'Импорттайтын жолдар жоқ.']);
+            throw ValidationException::withMessages(['file' => __('Импорттайтын жолдар жоқ.')]);
         }
         $keys = array_flip($columns);
         $rows = $valid = $seen = $placements = $primary = [];
@@ -86,7 +87,7 @@ class EducationWorkloadImport
                     $primary[$data['teacher_id']] = $data['organization_id'];
                 }
                 if (isset($seen[$data['identity']])) {
-                    $rows[$seen[$data['identity']]]['errors'][] = 'Жүктеме жолы файлда қайталанған.';
+                    $rows[$seen[$data['identity']]]['errors'][] = __('Жүктеме жолы файлда қайталанған.');
                     $this->invalid('Жүктеме жолы файлда қайталанған.');
                 }
                 $seen[$data['identity']] = $number;
@@ -145,9 +146,9 @@ class EducationWorkloadImport
             };
         }
         $data = Validator::make($input, $rules, [
-            'required' => '«:attribute» өрісі міндетті.',
-            'required_without' => '«:attribute» немесе «:values» өрісін толтырыңыз.',
-            'in' => '«:attribute» мәні жарамсыз.',
+            'required' => __('«:attribute» өрісі міндетті.'),
+            'required_without' => __('«:attribute» немесе «:values» өрісін толтырыңыз.'),
+            'in' => __('«:attribute» мәні жарамсыз.'),
         ], $this->columns($type))->validate();
         $officialNames = $type === 'college'
             ? $this->qualifications->validate($data['specialty_code'], $data['qualification_code'])
@@ -220,6 +221,6 @@ class EducationWorkloadImport
 
     private function invalid(string $message): never
     {
-        throw ValidationException::withMessages(['row' => $message]);
+        throw ValidationException::withMessages(['row' => __($message)]);
     }
 }

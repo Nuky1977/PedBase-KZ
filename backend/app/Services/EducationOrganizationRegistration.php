@@ -44,13 +44,13 @@ class EducationOrganizationRegistration
 
     public function template(string $type, SpreadsheetExport $export): string
     {
-        return $export->xlsx([array_values(self::COLUMNS)], [
-            ['Ұйымдарды тіркеу'],
-            ['Ұйым түрінің коды: '.$type],
-            ['БСН-ді және ресми аумақ кодтарын Excel-де мәтін ретінде енгізіңіз. БСН 12 цифрдан тұрады.'],
-            ['Мәртебе: active, inactive немесе archived. Қысқаша атау міндетті емес.'],
-            ['100 жолға дейін. Белгісіз аумақты әкімші анықтамалық бойынша қолмен сәйкестендіреді.'],
-            ['Құпиясөздер мен жеке деректерді қоспаңыз.'],
+        return $export->xlsx([array_values(SpreadsheetLabels::translate(self::COLUMNS))], [
+            [__('Ұйымдарды тіркеу')],
+            [__('Ұйым түрінің коды: :code', ['code' => $type])],
+            [__('БСН-ді және ресми аумақ кодтарын Excel-де мәтін ретінде енгізіңіз. БСН 12 цифрдан тұрады.')],
+            [__('Мәртебе: active, inactive немесе archived. Қысқаша атау міндетті емес.')],
+            [__('100 жолға дейін. Белгісіз аумақты әкімші анықтамалық бойынша қолмен сәйкестендіреді.')],
+            [__('Құпиясөздер мен жеке деректерді қоспаңыз.')],
         ]);
     }
 
@@ -64,7 +64,7 @@ class EducationOrganizationRegistration
                 $data = $this->validate($input, $id);
                 if ($organization->exists && (int) $organization->type_id !== (int) $data['type_id']
                     && DB::table('education_employments')->where('organization_id', $organization->id)->exists()) {
-                    throw ValidationException::withMessages(['type_code' => 'Еңбек тарихы бар ұйымның түрін өзгертуге болмайды.']);
+                    throw ValidationException::withMessages(['type_code' => __('Еңбек тарихы бар ұйымның түрін өзгертуге болмайды.')]);
                 }
                 $this->persist($organization, $data);
                 AuditEvent::record($id === null ? 'organization.created' : 'organization.updated', 'education_organization', $organization->id);
@@ -72,7 +72,7 @@ class EducationOrganizationRegistration
                 return $organization;
             }, 3);
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['bin' => 'Бұл БСН каталогта бар.']);
+            throw ValidationException::withMessages(['bin' => __('Бұл БСН каталогта бар.')]);
         }
     }
 
@@ -80,16 +80,16 @@ class EducationOrganizationRegistration
     {
         $worksheet = $this->reader->read($path);
         $header = $worksheet[1] ?? [];
-        if (count($header) !== count(self::COLUMNS) || count(array_unique($header)) !== count(self::COLUMNS)
-            || array_diff($header, self::COLUMNS)) {
-            throw ValidationException::withMessages(['file' => 'Бірінші жолда ұйым тіркеу үлгісінің барлық бағаны бір рет берілуі керек.']);
+        $columns = SpreadsheetLabels::matchHeader(self::COLUMNS, $header);
+        if ($columns === null) {
+            throw ValidationException::withMessages(['file' => __('Бірінші жолда ұйым тіркеу үлгісінің барлық бағаны бір рет берілуі керек.')]);
         }
         unset($worksheet[1]);
         if ($worksheet === []) {
-            throw ValidationException::withMessages(['file' => 'Импорттайтын дерек жолдары жоқ.']);
+            throw ValidationException::withMessages(['file' => __('Импорттайтын дерек жолдары жоқ.')]);
         }
 
-        $keys = array_flip(self::COLUMNS);
+        $keys = array_flip($columns);
         $rows = $valid = $seen = [];
         foreach ($worksheet as $number => $cells) {
             $input = [];
@@ -116,7 +116,7 @@ class EducationOrganizationRegistration
         foreach ($seen as $numbers) {
             if (count($numbers) > 1) {
                 foreach ($numbers as $number) {
-                    $rows[$number]['errors'][] = 'БСН файлда қайталанған.';
+                    $rows[$number]['errors'][] = __('БСН файлда қайталанған.');
                 }
             }
         }
@@ -141,7 +141,7 @@ class EducationOrganizationRegistration
                 try {
                     $this->persist(new EducationOrganization, $data);
                 } catch (UniqueConstraintViolationException) {
-                    throw ValidationException::withMessages(['file' => "{$number}-жол: бұл БСН каталогта бар."]);
+                    throw ValidationException::withMessages(['file' => __(__(':row-жол: бұл БСН каталогта бар.'), ['row' => $number])]);
                 }
             }
             AuditEvent::record('spreadsheet.import.education_organizations', 'spreadsheet_import', 0);
@@ -166,32 +166,32 @@ class EducationOrganizationRegistration
             'locality' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::in(['active', 'inactive', 'archived'])],
         ], [
-            'required' => '«:attribute» өрісі міндетті.',
-            'string' => '«:attribute» мәтін болуы керек.',
-            'max' => '«:attribute» өрісі :max таңбадан аспауы керек.',
-            'alpha_dash' => '«:attribute» кодының пішімі жарамсыз.',
-            'bin.regex' => 'БСН дәл 12 цифрдан тұруы керек.',
-            'bin.unique' => 'Бұл БСН каталогта бар.',
-            'status.in' => 'Мәртебе active, inactive немесе archived болуы керек.',
+            'required' => __('«:attribute» өрісі міндетті.'),
+            'string' => __('«:attribute» мәтін болуы керек.'),
+            'max' => __('«:attribute» өрісі :max таңбадан аспауы керек.'),
+            'alpha_dash' => __('«:attribute» кодының пішімі жарамсыз.'),
+            'bin.regex' => __('БСН дәл 12 цифрдан тұруы керек.'),
+            'bin.unique' => __('Бұл БСН каталогта бар.'),
+            'status.in' => __('Мәртебе active, inactive немесе archived болуы керек.'),
         ], self::COLUMNS);
         $type = $area = null;
         $validator->after(function ($validator) use ($input, &$type, &$area) {
             if (! $validator->errors()->has('type_code')) {
                 $type = DB::table('education_organization_types')->where('code', $input['type_code'])->value('id');
                 if ($type === null) {
-                    $validator->errors()->add('type_code', 'Ұйым түрінің коды анықтамалықта жоқ.');
+                    $validator->errors()->add('type_code', __('Ұйым түрінің коды анықтамалықта жоқ.'));
                 }
             }
             if (! $validator->errors()->has('region_code') && ! $validator->errors()->has('area_code')) {
                 $region = DB::table('education_regions')->where('code', $input['region_code'])->value('id');
                 if ($region === null) {
-                    $validator->errors()->add('region_code', 'Облыс коды анықтамалықта жоқ.');
+                    $validator->errors()->add('region_code', __('Облыс коды анықтамалықта жоқ.'));
 
                     return;
                 }
                 $area = DB::table('education_areas')->where('region_id', $region)->where('code', $input['area_code'])->value('id');
                 if ($area === null) {
-                    $validator->errors()->add('area_code', 'Аудан немесе қала коды осы облысқа тиесілі емес. Сәйкестікті қолмен тексеріңіз.');
+                    $validator->errors()->add('area_code', __('Аудан немесе қала коды осы облысқа тиесілі емес. Сәйкестікті қолмен тексеріңіз.'));
                 }
             }
         });

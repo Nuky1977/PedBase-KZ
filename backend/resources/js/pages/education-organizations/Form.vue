@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { index, store, update } from '@/routes/education-organizations';
+
+const { t } = useTranslation();
 
 type Reference = { code: string; name: string };
 type Fields = {
@@ -24,7 +27,7 @@ const props = defineProps<{
 }>();
 
 const title = computed(() =>
-    props.organization ? 'Ұйымды өңдеу' : 'Ұйым қосу',
+    props.organization ? t('Ұйымды өңдеу') : t('Ұйым қосу'),
 );
 const form = useForm<Fields>({
     name: props.organization?.name ?? '',
@@ -42,10 +45,10 @@ const areas = computed(() => {
     return props.areas.filter((item) => item.region_id === region?.id);
 });
 const fields = [
-    ['name', 'Атауы'],
-    ['short_name', 'Қысқаша атауы'],
-    ['bin', 'БСН'],
-    ['locality', 'Елді мекен'],
+    ['name', t('Атауы')],
+    ['short_name', t('Қысқаша атауы')],
+    ['bin', t('БСН')],
+    ['locality', t('Елді мекен')],
 ] as const;
 
 function submit() {
@@ -60,7 +63,9 @@ function submit() {
 <template>
     <section class="max-w-3xl space-y-5 p-4 md:p-6">
         <Head :title="title" />
-        <Link :href="index()" class="text-sm underline">Ұйымдар каталогы</Link>
+        <Link :href="index()" class="text-sm underline">{{
+            t('Ұйымдар каталогы')
+        }}</Link>
         <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
             {{ title }}
         </h1>
@@ -69,8 +74,11 @@ function submit() {
             class="text-sm"
             role="status"
         >
-            Ұйымды тіркеу үшін ұйым түрлері мен ресми аумақ анықтамалығын
-            толтыру қажет.
+            {{
+                t(
+                    'Ұйымды тіркеу үшін ұйым түрлері мен ресми аумақ анықтамалығын толтыру қажет.',
+                )
+            }}
         </p>
         <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="submit">
             <label
@@ -93,14 +101,14 @@ function submit() {
                 }}</span>
             </label>
             <label class="grid gap-1 text-sm">
-                Ұйым түрі
+                {{ t('Ұйым түрі') }}
                 <select
                     v-model="form.type_code"
                     :disabled="identityEditable === false"
                     required
                     class="rounded-md border bg-background p-2"
                 >
-                    <option value="">Түрін таңдаңыз</option>
+                    <option value="">{{ t('Түрін таңдаңыз') }}</option>
                     <option
                         v-for="item in types"
                         :key="item.code"
@@ -114,7 +122,7 @@ function submit() {
                 }}</span>
             </label>
             <label class="grid gap-1 text-sm">
-                Облыс
+                {{ t('Облыс') }}
                 <select
                     v-model="form.region_code"
                     :disabled="identityEditable === false"
@@ -122,7 +130,7 @@ function submit() {
                     class="rounded-md border bg-background p-2"
                     @change="form.area_code = ''"
                 >
-                    <option value="">Облысты таңдаңыз</option>
+                    <option value="">{{ t('Облысты таңдаңыз') }}</option>
                     <option
                         v-for="item in regions"
                         :key="item.code"
@@ -136,14 +144,14 @@ function submit() {
                 }}</span>
             </label>
             <label class="grid gap-1 text-sm">
-                Аудан немесе қала
+                {{ t('Аудан немесе қала') }}
                 <select
                     v-model="form.area_code"
                     required
                     :disabled="!areas.length || identityEditable === false"
                     class="rounded-md border bg-background p-2"
                 >
-                    <option value="">Аумақты таңдаңыз</option>
+                    <option value="">{{ t('Аумақты таңдаңыз') }}</option>
                     <option
                         v-for="item in areas"
                         :key="item.code"
@@ -157,15 +165,15 @@ function submit() {
                 }}</span>
             </label>
             <label class="grid gap-1 text-sm">
-                Мәртебе
+                {{ t('Мәртебе') }}
                 <select
                     v-model="form.status"
                     :disabled="identityEditable === false"
                     class="rounded-md border bg-background p-2"
                 >
-                    <option value="active">Белсенді</option>
-                    <option value="inactive">Белсенді емес</option>
-                    <option value="archived">Мұрағатталған</option>
+                    <option value="active">{{ t('Белсенді') }}</option>
+                    <option value="inactive">{{ t('Белсенді емес') }}</option>
+                    <option value="archived">{{ t('Мұрағатталған') }}</option>
                 </select>
                 <span v-if="form.errors.status" class="text-destructive">{{
                     form.errors.status
@@ -176,7 +184,7 @@ function submit() {
                 :disabled="form.processing || !form.area_code"
                 class="w-fit rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
             >
-                Сақтау
+                {{ t('Сақтау') }}
             </button>
         </form>
     </section>

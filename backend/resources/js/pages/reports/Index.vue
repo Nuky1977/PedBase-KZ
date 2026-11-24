@@ -5,8 +5,11 @@ import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/composables/useTranslation';
 import { index as organization } from '@/routes/organization';
 import { exportMethod, index } from '@/routes/reports';
+
+const { t } = useTranslation();
 
 const props = defineProps<{
     filters: {
@@ -51,13 +54,13 @@ function applyFilters() {
 
 <template>
     <div class="mx-auto w-full max-w-6xl space-y-5 p-4 sm:p-8">
-        <Head title="Есептер мен аналитика" />
+        <Head :title="t('Есептер мен аналитика')" />
         <header class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Есептер мен аналитика
+                {{ t('Есептер мен аналитика') }}
             </h1>
             <Button variant="outline" as-child
-                ><Link :href="organization()">Ұйымдар</Link></Button
+                ><Link :href="organization()">{{ t('Ұйымдар') }}</Link></Button
             >
         </header>
         <Card>
@@ -67,7 +70,7 @@ function applyFilters() {
                     @submit.prevent="applyFilters"
                 >
                     <div class="space-y-1">
-                        <Label for="report">Есеп түрі</Label>
+                        <Label for="report">{{ t('Есеп түрі') }}</Label>
                         <select
                             id="report"
                             v-model="report"
@@ -83,14 +86,14 @@ function applyFilters() {
                         </select>
                     </div>
                     <div class="space-y-1">
-                        <Label for="school">Мектеп</Label>
+                        <Label for="school">{{ t('Мектеп') }}</Label>
                         <select
                             id="school"
                             v-model="school"
                             :class="inputClass"
                         >
                             <option value="">
-                                Қолжетімді мектептердің барлығы
+                                {{ t('Қолжетімді мектептердің барлығы') }}
                             </option>
                             <option
                                 v-for="item in schools"
@@ -102,7 +105,9 @@ function applyFilters() {
                         </select>
                     </div>
                     <div class="space-y-1">
-                        <Label for="year">Оқу жылының басталуы</Label>
+                        <Label for="year">{{
+                            t('Оқу жылының басталуы')
+                        }}</Label>
                         <input
                             id="year"
                             v-model="year"
@@ -113,7 +118,7 @@ function applyFilters() {
                             max="9998"
                         />
                     </div>
-                    <Button>Қолдану</Button>
+                    <Button>{{ t('Қолдану') }}</Button>
                 </form>
             </CardContent>
         </Card>
@@ -127,8 +132,8 @@ function applyFilters() {
                         v-if="filters.report === 'attestations'"
                         class="text-sm text-muted-foreground"
                     >
-                        Келесі {{ warningDays }} күнде аяқталатын тіркелген
-                        мерзімдер.
+                        {{ t('Келесі') }} {{ warningDays }}
+                        {{ t('күнде аяқталатын тіркелген мерзімдер.') }}
                     </p>
                 </div>
                 <div class="flex gap-2">
@@ -137,7 +142,7 @@ function applyFilters() {
                             :href="
                                 exportMethod.url('csv', { query: exportQuery })
                             "
-                            >CSV жүктеу</a
+                            >{{ t('CSV жүктеу') }}</a
                         ></Button
                     >
                     <Button variant="outline" as-child
@@ -145,7 +150,7 @@ function applyFilters() {
                             :href="
                                 exportMethod.url('xlsx', { query: exportQuery })
                             "
-                            >Excel жүктеу</a
+                            >{{ t('Excel жүктеу') }}</a
                         ></Button
                     >
                 </div>
@@ -154,7 +159,7 @@ function applyFilters() {
                 v-if="!rows.data.length"
                 class="rounded-lg border p-4 text-muted-foreground"
             >
-                Таңдалған есепте дерек жоқ.
+                {{ t('Таңдалған есепте дерек жоқ.') }}
             </p>
             <div v-else class="overflow-x-auto rounded-lg border bg-card">
                 <table class="w-full text-left text-sm">

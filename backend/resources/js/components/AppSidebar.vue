@@ -24,6 +24,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useTranslation } from '@/composables/useTranslation';
 import { dashboard } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as importsIndex } from '@/routes/admin/imports';
@@ -37,6 +38,8 @@ import { organizationEmployment } from '@/routes/teacher';
 import { index as myEmployment } from '@/routes/teacher/employment';
 import type { NavItem } from '@/types';
 
+const { t } = useTranslation();
+
 const page = usePage();
 const isAdmin = computed(() => page.props.auth.user?.role === 'admin');
 const home = computed(() => (isAdmin.value ? adminDashboard() : dashboard()));
@@ -45,24 +48,24 @@ const navGroups = computed<{ label: string; items: NavItem[] }[]>(() => {
     const catalogItem = page.props.educationCatalogEnabled
         ? [
               {
-                  title: 'Ұйымдар каталогы',
+                  title: t('Ұйымдар каталогы'),
                   href: educationCatalog(),
                   icon: Building2,
               },
           ]
         : [];
     const access = {
-        title: 'Ұйымдық қолжетімділік',
+        title: t('Ұйымдық қолжетімділік'),
         href: organizations(),
         icon: ShieldCheck,
     };
     const schoolReports = {
-        title: 'Мектеп есептері',
+        title: t('Мектеп есептері'),
         href: reports(),
         icon: BookOpen,
     };
     const teacherDirectory = {
-        title: 'Педагогтер каталогы',
+        title: t('Педагогтер каталогы'),
         href: teachers(),
         icon: Users,
     };
@@ -70,38 +73,38 @@ const navGroups = computed<{ label: string; items: NavItem[] }[]>(() => {
     if (isAdmin.value) {
         return [
             {
-                label: 'Шолу',
+                label: t('Шолу'),
                 items: [
                     {
-                        title: 'Басқару панелі',
+                        title: t('Басқару панелі'),
                         href: adminDashboard(),
                         icon: LayoutGrid,
                     },
                 ],
             },
             {
-                label: 'Білім беру ұйымдары',
+                label: t('Білім беру ұйымдары'),
                 items: [
                     ...catalogItem,
                     teacherDirectory,
                     access,
                     {
-                        title: 'Мектептерді басқару',
+                        title: t('Мектептерді басқару'),
                         href: schoolsIndex(),
                         icon: School,
                     },
                 ],
             },
             {
-                label: 'Әкімші құралдары',
+                label: t('Әкімші құралдары'),
                 items: [
                     {
-                        title: 'Пайдаланушылар',
+                        title: t('Пайдаланушылар'),
                         href: usersIndex(),
                         icon: Users,
                     },
                     {
-                        title: 'Мектеп және педагог импорты',
+                        title: t('Мектеп және педагог импорты'),
                         href: importsIndex(),
                         icon: FileSpreadsheet,
                     },
@@ -116,28 +119,32 @@ const navGroups = computed<{ label: string; items: NavItem[] }[]>(() => {
     if (user?.role === 'teacher') {
         return [
             {
-                label: 'Шолу',
+                label: t('Шолу'),
                 items: [
-                    { title: 'Басты бет', href: dashboard(), icon: LayoutGrid },
+                    {
+                        title: t('Басты бет'),
+                        href: dashboard(),
+                        icon: LayoutGrid,
+                    },
                 ],
             },
             {
-                label: 'Педагог кабинеті',
+                label: t('Педагог кабинеті'),
                 items: [
                     {
-                        title: 'Менің жеке ісім',
+                        title: t('Менің жеке ісім'),
                         href: dossier(user.id),
                         icon: FolderGit2,
                     },
                     {
-                        title: 'Мектептегі еңбек деректерім',
+                        title: t('Мектептегі еңбек деректерім'),
                         href: myEmployment(),
                         icon: BriefcaseBusiness,
                     },
                     ...(page.props.educationCatalogEnabled
                         ? [
                               {
-                                  title: 'Ұйымдардағы жұмыс орындарым',
+                                  title: t('Ұйымдардағы жұмыс орындарым'),
                                   href: organizationEmployment(),
                                   icon: Building2,
                               },
@@ -151,18 +158,18 @@ const navGroups = computed<{ label: string; items: NavItem[] }[]>(() => {
     if (user?.role === 'school_admin' || user?.role === 'methodist') {
         return [
             {
-                label: 'Білім беру ұйымдары',
+                label: t('Білім беру ұйымдары'),
                 items: [...catalogItem, teacherDirectory, access],
             },
-            { label: 'Талдау', items: [schoolReports] },
+            { label: t('Талдау'), items: [schoolReports] },
         ];
     }
 
     return [
         {
-            label: 'Шолу',
+            label: t('Шолу'),
             items: [
-                { title: 'Басты бет', href: dashboard(), icon: LayoutGrid },
+                { title: t('Басты бет'), href: dashboard(), icon: LayoutGrid },
             ],
         },
     ];
@@ -184,7 +191,7 @@ const navGroups = computed<{ label: string; items: NavItem[] }[]>(() => {
         </SidebarHeader>
 
         <SidebarContent class="gap-4 py-3">
-            <nav aria-label="Негізгі навигация" class="grid gap-4">
+            <nav :aria-label="t('Негізгі навигация')" class="grid gap-4">
                 <NavMain
                     v-for="group in navGroups"
                     :key="group.label"

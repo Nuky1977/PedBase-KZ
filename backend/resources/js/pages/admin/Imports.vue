@@ -4,7 +4,10 @@ import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/composables/useTranslation';
 import { confirm, preview, template } from '@/routes/admin/imports';
+
+const { t } = useTranslation();
 
 type Kind = 'schools' | 'teachers';
 type Preview = {
@@ -27,7 +30,7 @@ const busy = ref(false);
 const error = ref('');
 const success = ref('');
 const recordLabel = computed(() =>
-    kind.value === 'schools' ? 'мектеп' : 'педагог аккаунты',
+    kind.value === 'schools' ? t('мектеп') : t('педагог аккаунты'),
 );
 
 function reset() {
@@ -86,8 +89,9 @@ async function submit(commit: boolean) {
         );
 
         if (response.status === 419 || response.status === 401) {
-            error.value =
-                'Сессия мерзімі аяқталды. Бетті қайта ашып, жүйеге кіріңіз.';
+            error.value = t(
+                'Сессия мерзімі аяқталды. Бетті қайта ашып, жүйеге кіріңіз.',
+            );
 
             return;
         }
@@ -95,8 +99,8 @@ async function submit(commit: boolean) {
         if (response.status === 403 || response.status === 429) {
             error.value =
                 response.status === 403
-                    ? 'Импортқа рұқсат жоқ.'
-                    : 'Сұраулар тым жиі жіберілді. Кейін қайталаңыз.';
+                    ? t('Импортқа рұқсат жоқ.')
+                    : t('Сұраулар тым жиі жіберілді. Кейін қайталаңыз.');
 
             return;
         }
@@ -107,20 +111,23 @@ async function submit(commit: boolean) {
             error.value =
                 data.errors?.file?.[0] ??
                 data.errors?.token?.[0] ??
-                'Импорт сұрауы орындалмады.';
+                t('Импорт сұрауы орындалмады.');
 
             if (commit) {
                 result.value = null;
             }
         } else if (commit) {
             reset();
-            success.value = 'Сақталған жазба саны: ' + data.created;
+            success.value = t('Сақталған жазбалар саны: :count.', {
+                count: data.created,
+            });
         } else {
             result.value = data as Preview;
         }
     } catch {
-        error.value =
-            'Серверден жауап алу мүмкін болмады. Жазбалардың күйін тексеріп, файлды қайта қараңыз.';
+        error.value = t(
+            'Серверден жауап алу мүмкін болмады. Жазбалардың күйін тексеріп, файлды қайта қараңыз.',
+        );
     } finally {
         busy.value = false;
     }
@@ -129,26 +136,33 @@ async function submit(commit: boolean) {
 
 <template>
     <div class="mx-auto w-full max-w-4xl space-y-5 p-4 sm:p-8">
-        <Head title="Excel импорты" />
+        <Head :title="t('Excel импорты')" />
         <header>
             <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Excel импорты
+                {{ t('Excel импорты') }}
             </h1>
             <p class="mt-2 text-sm text-muted-foreground">
-                Мектептерді немесе педагогтерді XLSX файлынан қосыңыз. Деректер
-                растаудан кейін сақталады.
+                {{
+                    t(
+                        'Мектептерді немесе педагогтерді XLSX файлынан қосыңыз. Деректер растаудан кейін сақталады.',
+                    )
+                }}
             </p>
         </header>
 
         <Card>
             <CardHeader
-                ><CardTitle>Файлды алдын ала тексеру</CardTitle></CardHeader
+                ><CardTitle>{{
+                    t('Файлды алдын ала тексеру')
+                }}</CardTitle></CardHeader
             >
             <CardContent>
                 <form class="space-y-4" @submit.prevent="submit(false)">
                     <div class="flex flex-wrap items-end gap-3">
                         <div class="space-y-2">
-                            <Label for="import-kind">Импорт түрі</Label>
+                            <Label for="import-kind">{{
+                                t('Импорт түрі')
+                            }}</Label>
                             <select
                                 id="import-kind"
                                 v-model="kind"
@@ -156,14 +170,18 @@ async function submit(commit: boolean) {
                                 :disabled="busy"
                                 @change="reset"
                             >
-                                <option value="schools">Мектептер</option>
-                                <option value="teachers">Педагогтер</option>
+                                <option value="schools">
+                                    {{ t('Мектептер') }}
+                                </option>
+                                <option value="teachers">
+                                    {{ t('Педагогтер') }}
+                                </option>
                             </select>
                         </div>
                         <Button variant="outline" as-child
-                            ><a :href="template.url(kind)"
-                                >XLSX үлгісін жүктеу</a
-                            ></Button
+                            ><a :href="template.url(kind)">{{
+                                t('XLSX үлгісін жүктеу')
+                            }}</a></Button
                         >
                     </div>
                     <p class="text-sm text-muted-foreground">
@@ -173,13 +191,14 @@ async function submit(commit: boolean) {
                         v-if="kind === 'teachers'"
                         class="text-sm text-muted-foreground"
                     >
-                        Пән коды мен белсенді мектептің БСН-і жүйеде болуы
-                        керек. Бірінші мектеп негізгі жұмыс орны болады. Алғашқы
-                        кіру үшін құпиясөзді растаулы email арнасы арқылы орнату
-                        қажет.
+                        {{
+                            t(
+                                'Пән коды мен белсенді мектептің БСН-і жүйеде болуы керек. Бірінші мектеп негізгі жұмыс орны болады. Алғашқы кіру үшін құпиясөзді растаулы email арнасы арқылы орнату қажет.',
+                            )
+                        }}
                     </p>
                     <div class="space-y-2">
-                        <Label for="import-file">XLSX файлы</Label>
+                        <Label for="import-file">{{ t('XLSX файлы') }}</Label>
                         <input
                             id="import-file"
                             ref="fileInput"
@@ -190,11 +209,11 @@ async function submit(commit: boolean) {
                             @change="choose"
                         />
                         <p class="text-sm text-muted-foreground">
-                            Ең көбі 2 МБ және 100 дерек жолы.
+                            {{ t('Ең көбі 2 МБ және 100 дерек жолы.') }}
                         </p>
                     </div>
                     <Button :disabled="!file || busy">{{
-                        busy ? 'Өңделуде…' : 'Алдын ала тексеру'
+                        busy ? t('Өңделуде…') : t('Алдын ала тексеру')
                     }}</Button>
                 </form>
                 <p
@@ -215,14 +234,17 @@ async function submit(commit: boolean) {
         </Card>
 
         <Card v-if="result">
-            <CardHeader><CardTitle>Алдын ала қарау</CardTitle></CardHeader>
+            <CardHeader
+                ><CardTitle>{{ t('Алдын ала қарау') }}</CardTitle></CardHeader
+            >
             <CardContent class="space-y-4">
                 <p class="text-sm" role="status">
-                    Жолдар: {{ result.total }}. Жарамды: {{ result.valid }}.
-                    Қатесі бар: {{ result.total - result.valid }}.
+                    {{ t('Жолдар:') }} {{ result.total }}{{ t('. Жарамды:') }}
+                    {{ result.valid }}{{ t('. Қатесі бар:') }}
+                    {{ result.total - result.valid }}.
                     <span v-if="result.token"
-                        >Расталғанда {{ result.new_records }}
-                        {{ recordLabel }} қосылады.</span
+                        >{{ t('Расталғанда') }} {{ result.new_records }}
+                        {{ recordLabel }} {{ t('қосылады.') }}</span
                     >
                 </p>
                 <div
@@ -230,15 +252,17 @@ async function submit(commit: boolean) {
                     class="space-y-1 text-sm"
                 >
                     <p>
-                        Жұмыс орны бойынша бекітулер: {{ result.placements }}.
+                        {{ t('Жұмыс орны бойынша бекітулер:') }}
+                        {{ result.placements }}.
                     </p>
                     <ul class="list-disc space-y-1 pl-5">
                         <li
                             v-for="item in result.hours_by_year"
                             :key="item.year"
                         >
-                            {{ item.year }}–{{ item.year + 1 }} оқу жылының
-                            жиынтық апталық жүктемесі: {{ item.hours }} сағат.
+                            {{ item.year }}–{{ item.year + 1 }}
+                            {{ t('оқу жылының жиынтық апталық жүктемесі:') }}
+                            {{ item.hours }} {{ t('сағат.') }}
                         </li>
                     </ul>
                 </div>
@@ -248,7 +272,9 @@ async function submit(commit: boolean) {
                         :key="row.number"
                         class="grid gap-1 px-3 py-2 text-sm sm:grid-cols-[6rem_1fr]"
                     >
-                        <span class="font-medium">{{ row.number }}-жол</span>
+                        <span class="font-medium"
+                            >{{ row.number }}{{ t('-жол') }}</span
+                        >
                         <ul
                             v-if="row.errors.length"
                             class="list-disc space-y-1 pl-5 text-destructive"
@@ -259,8 +285,8 @@ async function submit(commit: boolean) {
                         </ul>
                         <span v-else>{{
                             row.primary
-                                ? 'Жарамды · негізгі жұмыс орны'
-                                : 'Жарамды'
+                                ? t('Жарамды · негізгі жұмыс орны')
+                                : t('Жарамды')
                         }}</span>
                     </li>
                 </ul>
@@ -268,10 +294,10 @@ async function submit(commit: boolean) {
                     v-if="result.token"
                     :disabled="busy"
                     @click="submit(true)"
-                    >Растау және сақтау</Button
+                    >{{ t('Растау және сақтау') }}</Button
                 >
                 <p v-else class="text-sm text-muted-foreground">
-                    Қате жолдарды түзетіп, файлды қайта жүктеңіз.
+                    {{ t('Қате жолдарды түзетіп, файлды қайта жүктеңіз.') }}
                 </p>
             </CardContent>
         </Card>

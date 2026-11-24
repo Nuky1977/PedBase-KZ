@@ -7,6 +7,7 @@ use App\Policies\OrganizationScope;
 use App\Services\EducationCatalogReports;
 use App\Services\EducationReports;
 use App\Services\SpreadsheetExport;
+use App\Services\SpreadsheetLabels;
 use Generator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
@@ -45,8 +46,8 @@ class EducationReportController extends Controller
 
         return Inertia::render('reports/Catalog', [
             'filters' => $filters,
-            'definitions' => EducationCatalogReports::REPORTS,
-            'columns' => EducationCatalogReports::COLUMNS,
+            'definitions' => SpreadsheetLabels::translate(EducationCatalogReports::REPORTS),
+            'columns' => SpreadsheetLabels::translate(EducationCatalogReports::COLUMNS),
             'rows' => $reports->query($request->user(), $filters)->simplePaginate(25)->withQueryString(),
         ]);
     }
@@ -66,7 +67,7 @@ class EducationReportController extends Controller
             'achievements' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'award_title', 'issuer', 'achievement_on', 'level'],
         }));
 
-        return $this->download($format, "pedbase-catalog-{$filters['report']}.{$format}", $this->rows($query, $columns), $spreadsheet);
+        return $this->download($format, "pedbase-catalog-{$filters['report']}.{$format}", $this->rows($query, SpreadsheetLabels::translate($columns)), $spreadsheet);
     }
 
     private function catalogFilters(Request $request): array
@@ -121,7 +122,12 @@ class EducationReportController extends Controller
         $school = $request->filled('school_id') ? $request->integer('school_id') : null;
         $year = $request->filled('academic_year') ? $request->integer('academic_year') : null;
 
-        return [$report, $school, $year, trans('reports', locale: 'kk'), $reports->query($request->user(), $report, $school, $year)];
+        $labels = array_map(fn (array $definition): array => [
+            'title' => __($definition['title']),
+            'columns' => SpreadsheetLabels::translate($definition['columns']),
+        ], trans('reports', locale: 'kk'));
+
+        return [$report, $school, $year, $labels, $reports->query($request->user(), $report, $school, $year)];
     }
 
     private function rows(Builder $query, array $columns): Generator

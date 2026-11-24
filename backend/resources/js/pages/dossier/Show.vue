@@ -6,6 +6,7 @@ import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/composables/useTranslation';
 import {
     achievementDocument,
     certificate,
@@ -15,6 +16,8 @@ import {
 } from '@/routes/dossiers';
 import { organizationEmployment } from '@/routes/teacher';
 import { edit as editProfile } from '@/routes/teacher/profile';
+
+const { t } = useTranslation();
 
 type Kind = 'diplomas' | 'courses' | 'attestations' | 'achievements';
 type Entry = {
@@ -53,43 +56,51 @@ const props = defineProps<{
 const sections: { key: Kind; title: string; fields: Field[] }[] = [
     {
         key: 'achievements',
-        title: 'Марапаттар және кәсіби жетістіктер',
+        title: t('Марапаттар және кәсіби жетістіктер'),
         fields: [
-            { key: 'title', label: 'Атауы' },
-            { key: 'issuer', label: 'Берген ұйым' },
-            { key: 'awarded_on', label: 'Берілген күні', type: 'date' },
-            { key: 'level', label: 'Деңгейі' },
-            { key: 'description', label: 'Сипаттамасы', optional: true },
+            { key: 'title', label: t('Атауы') },
+            { key: 'issuer', label: t('Берген ұйым') },
+            { key: 'awarded_on', label: t('Берілген күні'), type: 'date' },
+            { key: 'level', label: t('Деңгейі') },
+            { key: 'description', label: t('Сипаттамасы'), optional: true },
         ],
     },
     {
         key: 'diplomas',
-        title: 'Дипломдар',
+        title: t('Дипломдар'),
         fields: [
-            { key: 'education_level', label: 'Білім деңгейі' },
-            { key: 'institution', label: 'Оқу орны' },
-            { key: 'specialty', label: 'Мамандық' },
-            { key: 'diploma_number', label: 'Диплом нөмірі', optional: true },
-            { key: 'graduation_year', label: 'Бітірген жылы', type: 'number' },
+            { key: 'education_level', label: t('Білім деңгейі') },
+            { key: 'institution', label: t('Оқу орны') },
+            { key: 'specialty', label: t('Мамандық') },
+            {
+                key: 'diploma_number',
+                label: t('Диплом нөмірі'),
+                optional: true,
+            },
+            {
+                key: 'graduation_year',
+                label: t('Бітірген жылы'),
+                type: 'number',
+            },
         ],
     },
     {
         key: 'courses',
-        title: 'Біліктілікті арттыру курстары',
+        title: t('Біліктілікті арттыру курстары'),
         fields: [
-            { key: 'title', label: 'Курс атауы' },
-            { key: 'provider', label: 'Ұйым' },
-            { key: 'hours', label: 'Сағат саны', type: 'number' },
-            { key: 'started_on', label: 'Басталған күні', type: 'date' },
-            { key: 'ended_on', label: 'Аяқталған күні', type: 'date' },
+            { key: 'title', label: t('Курс атауы') },
+            { key: 'provider', label: t('Ұйым') },
+            { key: 'hours', label: t('Сағат саны'), type: 'number' },
+            { key: 'started_on', label: t('Басталған күні'), type: 'date' },
+            { key: 'ended_on', label: t('Аяқталған күні'), type: 'date' },
             {
                 key: 'certificate_number',
-                label: 'Сертификат нөмірі',
+                label: t('Сертификат нөмірі'),
                 optional: true,
             },
             {
                 key: 'certificate_issued_on',
-                label: 'Сертификат берілген күн',
+                label: t('Сертификат берілген күн'),
                 type: 'date',
                 optional: true,
             },
@@ -97,13 +108,13 @@ const sections: { key: Kind; title: string; fields: Field[] }[] = [
     },
     {
         key: 'attestations',
-        title: 'Аттестаттау тарихы',
+        title: t('Аттестаттау тарихы'),
         fields: [
-            { key: 'category', label: 'Біліктілік санаты' },
-            { key: 'awarded_on', label: 'Берілген күні', type: 'date' },
+            { key: 'category', label: t('Біліктілік санаты') },
+            { key: 'awarded_on', label: t('Берілген күні'), type: 'date' },
             {
                 key: 'valid_until',
-                label: 'Қолданылу мерзімі',
+                label: t('Қолданылу мерзімі'),
                 type: 'date',
                 optional: true,
             },
@@ -156,7 +167,7 @@ function setCertificate(event: Event) {
 }
 
 function remove(kind: Kind, entry: Entry) {
-    if (window.confirm('Бұл жазбаны алып тастайсыз ба?')) {
+    if (window.confirm(t('Бұл жазбаны алып тастайсыз ба?'))) {
         router.visit(
             destroy({ teacher: props.teacher.id, kind, record: entry.id }),
             {
@@ -178,42 +189,50 @@ const inputClass =
 
 <template>
     <div class="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-8">
-        <Head title="Педагогтің жеке ісі" />
+        <Head :title="t('Педагогтің жеке ісі')" />
         <header class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Педагогтің жеке ісі
+                    {{ t('Педагогтің жеке ісі') }}
                 </h1>
                 <p class="mt-1 text-muted-foreground">{{ teacher.name }}</p>
             </div>
             <div v-if="isOwn" class="flex flex-wrap gap-2">
                 <Button variant="outline" as-child>
-                    <Link :href="editProfile()">Жеке мәліметтерді өңдеу</Link>
+                    <Link :href="editProfile()">{{
+                        t('Жеке мәліметтерді өңдеу')
+                    }}</Link>
                 </Button>
                 <Button v-if="showCatalogEmployment" variant="outline" as-child>
-                    <Link :href="organizationEmployment()"
-                        >Ұйымдардағы жұмыс орындарым</Link
-                    >
+                    <Link :href="organizationEmployment()">{{
+                        t('Ұйымдардағы жұмыс орындарым')
+                    }}</Link>
                 </Button>
             </div>
         </header>
         <Card>
             <CardHeader
-                ><CardTitle>Профиль және еңбек өтілі</CardTitle></CardHeader
+                ><CardTitle>{{
+                    t('Профиль және еңбек өтілі')
+                }}</CardTitle></CardHeader
             >
             <CardContent>
                 <dl class="grid gap-3 text-sm sm:grid-cols-3">
                     <div>
-                        <dt class="text-muted-foreground">Білім деңгейі</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Білім деңгейі') }}
+                        </dt>
                         <dd>{{ profile?.education_level ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-muted-foreground">Жалпы өтілі (ай)</dt>
+                        <dt class="text-muted-foreground">
+                            {{ t('Жалпы өтілі (ай)') }}
+                        </dt>
                         <dd>{{ profile?.total_experience_months ?? '—' }}</dd>
                     </div>
                     <div>
                         <dt class="text-muted-foreground">
-                            Педагогикалық өтілі (ай)
+                            {{ t('Педагогикалық өтілі (ай)') }}
                         </dt>
                         <dd>
                             {{ profile?.teaching_experience_months ?? '—' }}
@@ -233,7 +252,7 @@ const inputClass =
                         size="sm"
                         variant="outline"
                         @click="openEditor(section.key)"
-                        >Жазба қосу</Button
+                        >{{ t('Жазба қосу') }}</Button
                     >
                 </CardHeader>
                 <CardContent class="space-y-4">
@@ -245,8 +264,8 @@ const inputClass =
                         <h3 class="font-medium">
                             {{
                                 editing === null
-                                    ? 'Жаңа жазба'
-                                    : 'Жазбаны өңдеу'
+                                    ? t('Жаңа жазба')
+                                    : t('Жазбаны өңдеу')
                             }}
                         </h3>
                         <div class="grid gap-3 sm:grid-cols-2">
@@ -274,9 +293,9 @@ const inputClass =
                                 "
                                 class="space-y-1"
                             >
-                                <Label for="certificate"
-                                    >Растайтын құжат (PDF, 5 МБ дейін)</Label
-                                >
+                                <Label for="certificate">{{
+                                    t('Растайтын құжат (PDF, 5 МБ дейін)')
+                                }}</Label>
                                 <input
                                     id="certificate"
                                     type="file"
@@ -288,12 +307,14 @@ const inputClass =
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <Button :disabled="form.processing">Сақтау</Button>
+                            <Button :disabled="form.processing">{{
+                                t('Сақтау')
+                            }}</Button>
                             <Button
                                 type="button"
                                 variant="outline"
                                 @click="selected = null"
-                                >Бас тарту</Button
+                                >{{ t('Бас тарту') }}</Button
                             >
                         </div>
                     </form>
@@ -301,7 +322,7 @@ const inputClass =
                         v-if="!$props[section.key]?.data.length"
                         class="text-sm text-muted-foreground"
                     >
-                        Жазба жоқ.
+                        {{ t('Жазба жоқ.') }}
                     </p>
                     <article
                         v-for="entry in $props[section.key]?.data"
@@ -343,20 +364,20 @@ const inputClass =
                                                   course: entry.id,
                                               }).url
                                     "
-                                    >PDF жүктеу</a
+                                    >{{ t('PDF жүктеу') }}</a
                                 ></Button
                             >
                             <Button
                                 size="sm"
                                 variant="outline"
                                 @click="openEditor(section.key, entry)"
-                                >Өңдеу</Button
+                                >{{ t('Өңдеу') }}</Button
                             >
                             <Button
                                 size="sm"
                                 variant="ghost"
                                 @click="remove(section.key, entry)"
-                                >Алып тастау</Button
+                                >{{ t('Алып тастау') }}</Button
                             >
                         </div>
                     </article>

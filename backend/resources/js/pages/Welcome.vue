@@ -2,18 +2,23 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ArrowRight } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/composables/useTranslation';
 import { dashboard, login } from '@/routes';
+
+const { t } = useTranslation();
 
 const page = usePage();
 </script>
 
 <template>
-    <Head title="Басты бет" />
+    <Head :title="t('Басты бет')" />
     <div class="flex min-h-svh flex-col bg-background text-foreground">
         <header class="border-b">
             <div class="mx-auto flex max-w-6xl items-center px-4 py-4 sm:px-8">
                 <AppLogo />
+                <LocaleSwitcher />
             </div>
         </header>
         <main
@@ -25,13 +30,16 @@ const page = usePage();
                 <h1
                     class="max-w-3xl text-3xl leading-tight font-bold tracking-tight sm:text-5xl"
                 >
-                    Білім беру ұйымдарын басқару жүйесі
+                    {{ t('Білім беру ұйымдарын басқару жүйесі') }}
                 </h1>
                 <p
                     class="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground"
                 >
-                    Ұйымдар каталогы, педагогтердің жеке істері, еңбек деректері
-                    және есептер.
+                    {{
+                        t(
+                            'Ұйымдар каталогы, педагогтердің жеке істері, еңбек деректері және есептер.',
+                        )
+                    }}
                 </p>
                 <Button
                     as-child
@@ -40,8 +48,8 @@ const page = usePage();
                     <Link :href="page.props.auth.user ? dashboard() : login()">
                         {{
                             page.props.auth.user
-                                ? 'Жеке кабинетке өту'
-                                : 'Жүйеге кіру'
+                                ? t('Жеке кабинетке өту')
+                                : t('Жүйеге кіру')
                         }}
                         <ArrowRight aria-hidden="true" />
                     </Link>

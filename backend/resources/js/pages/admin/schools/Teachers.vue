@@ -4,9 +4,12 @@ import { watch } from 'vue';
 import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/composables/useTranslation';
 import { school as schoolEmployment } from '@/routes/admin/employment';
 import { teachers as schoolTeachers } from '@/routes/admin/schools';
 import { show as dossier } from '@/routes/dossiers';
+
+const { t } = useTranslation();
 
 type School = {
     id: number;
@@ -55,7 +58,9 @@ const detachTeacher = (schoolId: number, teacher: Teacher): void => {
     }
 
     const confirmed = window.confirm(
-        `${teacher.name} педагогін осы мектептен ажыратуға сенімдісіз бе?`,
+        t(':name педагогін осы мектептен ажыратуға сенімдісіз бе?', {
+            name: teacher.name,
+        }),
     );
 
     if (!confirmed) {
@@ -73,7 +78,10 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
     }
 
     const confirmed = window.confirm(
-        `${teacher.name} педагогі үшін осы мектепті негізгі жұмыс орны ретінде белгілеуге сенімдісіз бе?`,
+        t(
+            ':name педагогі үшін осы мектепті негізгі жұмыс орны ретінде белгілеуге сенімдісіз бе?',
+            { name: teacher.name },
+        ),
     );
 
     if (!confirmed) {
@@ -91,7 +99,7 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
 </script>
 
 <template>
-    <Head :title="`${school.name} — педагогтар`" />
+    <Head :title="t(':name — педагогтер', { name: school.name })" />
 
     <div class="min-h-full bg-muted/40 p-4 sm:p-8">
         <div class="mx-auto max-w-7xl">
@@ -103,7 +111,7 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                     </h1>
 
                     <p class="mt-2 text-muted-foreground">
-                        Мектепке тіркелген педагогтарды басқару
+                        {{ t('Мектепке тіркелген педагогтарды басқару') }}
                     </p>
                 </div>
 
@@ -112,24 +120,29 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                         :href="schoolEmployment(school.id)"
                         class="rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-gray-50"
                     >
-                        Еңбек деректері
+                        {{ t('Еңбек деректері') }}
                     </Link>
                     <Link
                         href="/admin/schools"
                         class="rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-gray-50"
                     >
-                        ← Мектептерге қайту
+                        {{ t('← Мектептерге қайту') }}
                     </Link>
                 </div>
             </div>
 
             <!-- Педагогты мектепке бекіту -->
             <div class="mb-6 rounded-xl border bg-card p-6">
-                <h2 class="text-xl font-semibold">Педагогты мектепке бекіту</h2>
+                <h2 class="text-xl font-semibold">
+                    {{ t('Педагогты мектепке бекіту') }}
+                </h2>
 
                 <p class="mt-1 text-sm text-muted-foreground">
-                    Жүйеде тіркелген педагогты таңдап, жұмыс орнының түрін
-                    көрсетіңіз.
+                    {{
+                        t(
+                            'Жүйеде тіркелген педагогты таңдап, жұмыс орнының түрін көрсетіңіз.',
+                        )
+                    }}
                 </p>
 
                 <Form
@@ -141,7 +154,7 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                     <!-- Педагог -->
                     <div>
                         <label for="teacher_id" class="mb-1 block font-medium">
-                            Педагог
+                            {{ t('Педагог') }}
                         </label>
 
                         <select
@@ -150,7 +163,9 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                             required
                             class="w-full rounded-md border p-2"
                         >
-                            <option value="">Педагогты таңдаңыз</option>
+                            <option value="">
+                                {{ t('Педагогты таңдаңыз') }}
+                            </option>
 
                             <option
                                 v-for="teacher in availableTeachers"
@@ -173,7 +188,7 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                     <!-- Жұмыс орны -->
                     <div>
                         <label for="is_primary" class="mb-1 block font-medium">
-                            Жұмыс орны
+                            {{ t('Жұмыс орны') }}
                         </label>
 
                         <select
@@ -182,9 +197,13 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                             required
                             class="w-full rounded-md border p-2"
                         >
-                            <option value="1">Негізгі жұмыс орны</option>
+                            <option value="1">
+                                {{ t('Негізгі жұмыс орны') }}
+                            </option>
 
-                            <option value="0">Қосымша жұмыс орны</option>
+                            <option value="0">
+                                {{ t('Қосымша жұмыс орны') }}
+                            </option>
                         </select>
 
                         <p
@@ -206,8 +225,8 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                         >
                             {{
                                 processing
-                                    ? 'Бекітілуде...'
-                                    : 'Педагогты бекіту'
+                                    ? t('Бекітілуде...')
+                                    : t('Педагогты бекіту')
                             }}
                         </button>
                     </div>
@@ -217,13 +236,15 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                     v-if="availableTeachers.length === 0"
                     class="mt-4 text-sm text-muted-foreground"
                 >
-                    Бекітуге қолжетімді педагог жоқ.
+                    {{ t('Бекітуге қолжетімді педагог жоқ.') }}
                 </p>
             </div>
 
             <!-- Педагогтар саны -->
             <div class="mb-6 rounded-xl border bg-card p-5">
-                <div class="text-sm text-muted-foreground">Педагогтар саны</div>
+                <div class="text-sm text-muted-foreground">
+                    {{ t('Педагогтар саны') }}
+                </div>
 
                 <div class="mt-1 text-3xl font-bold">
                     {{ teacherCount }}
@@ -238,7 +259,7 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                 <label
                     for="assigned-teacher-search"
                     class="mb-2 block text-sm font-medium"
-                    >Аты-жөні бойынша іздеу</label
+                    >{{ t('Аты-жөні бойынша іздеу') }}</label
                 >
                 <Input
                     id="assigned-teacher-search"
@@ -248,13 +269,13 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                     class="min-h-11 sm:max-w-sm"
                 />
                 <div class="flex flex-wrap gap-2">
-                    <Button class="min-h-11" :disabled="search.processing"
-                        >Іздеу</Button
-                    >
+                    <Button class="min-h-11" :disabled="search.processing">{{
+                        t('Іздеу')
+                    }}</Button>
                     <Button variant="outline" class="min-h-11" as-child
-                        ><Link :href="schoolTeachers(school.id)"
-                            >Тазарту</Link
-                        ></Button
+                        ><Link :href="schoolTeachers(school.id)">{{
+                            t('Тазарту')
+                        }}</Link></Button
                     >
                 </div>
                 <p
@@ -271,8 +292,8 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
             >
                 {{
                     teacherCount
-                        ? 'Іздеуге сәйкес педагог табылмады.'
-                        : 'Бұл мектепке педагог бекітілмеген.'
+                        ? t('Іздеуге сәйкес педагог табылмады.')
+                        : t('Бұл мектепке педагог бекітілмеген.')
                 }}
             </p>
             <ul v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -307,26 +328,28 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                     >
                         {{
                             teacher.is_primary
-                                ? 'Негізгі жұмыс орны'
-                                : 'Қосымша жұмыс орны'
+                                ? t('Негізгі жұмыс орны')
+                                : t('Қосымша жұмыс орны')
                         }}
                     </span>
                     <div class="mt-auto flex flex-wrap gap-2">
                         <Button variant="outline" class="min-h-11" as-child>
-                            <Link :href="dossier(teacher.id)">Жеке іс</Link>
+                            <Link :href="dossier(teacher.id)">{{
+                                t('Жеке іс')
+                            }}</Link>
                         </Button>
                         <template v-if="!teacher.is_primary">
                             <Button
                                 variant="outline"
                                 class="min-h-11"
                                 @click="makeTeacherPrimary(school.id, teacher)"
-                                >Негізгі ету</Button
+                                >{{ t('Негізгі ету') }}</Button
                             >
                             <Button
                                 variant="outline"
                                 class="min-h-11"
                                 @click="detachTeacher(school.id, teacher)"
-                                >Ажырату</Button
+                                >{{ t('Ажырату') }}</Button
                             >
                         </template>
                     </div>
@@ -334,7 +357,9 @@ const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
                         v-if="teacher.is_primary"
                         class="text-xs text-muted-foreground"
                     >
-                        Негізгі жұмыс орнын тікелей ажыратуға болмайды.
+                        {{
+                            t('Негізгі жұмыс орнын тікелей ажыратуға болмайды.')
+                        }}
                     </p>
                 </li>
             </ul>

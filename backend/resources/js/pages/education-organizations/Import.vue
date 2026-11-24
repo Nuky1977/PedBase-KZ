@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { index, template } from '@/routes/education-organizations';
 import { confirm, preview } from '@/routes/education-organizations/imports';
+
+const { t } = useTranslation();
 
 const props = defineProps<{
     types: Record<string, string>;
@@ -93,17 +96,20 @@ async function submit(save: boolean) {
                 result.errors?.token?.[0] ??
                 result.errors?.workload_type?.[0] ??
                 result.errors?.teacher_accounts?.[0] ??
-                'Импорт сұрауы орындалмады.';
+                t('Импорт сұрауы орындалмады.');
         } else if (save) {
             rows.value = [];
-            status.value = `Сақталған жазбалар саны: ${result.created}.`;
+            status.value = t('Сақталған жазбалар саны: :count.', {
+                count: result.created,
+            });
         } else {
             rows.value = result.rows;
             token.value = result.token;
         }
     } catch {
-        error.value =
-            'Сұрау нәтижесін алу мүмкін болмады. Файлды қайта тексеріңіз.';
+        error.value = t(
+            'Сұрау нәтижесін алу мүмкін болмады. Файлды қайта тексеріңіз.',
+        );
     } finally {
         busy.value = false;
     }
@@ -112,13 +118,15 @@ async function submit(save: boolean) {
 
 <template>
     <section class="space-y-5 p-4 md:p-6">
-        <Head title="Excel импорты" />
-        <Link :href="index()" class="text-sm underline">Ұйымдар каталогы</Link>
+        <Head :title="t('Excel импорты')" />
+        <Link :href="index()" class="text-sm underline">{{
+            t('Ұйымдар каталогы')
+        }}</Link>
         <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Excel импорты
+            {{ t('Excel импорты') }}
         </h1>
         <label class="grid max-w-sm gap-1 text-sm">
-            Импорт түрі
+            {{ t('Импорт түрі') }}
             <select
                 v-model="workload"
                 :disabled="busy"
@@ -130,12 +138,12 @@ async function submit(save: boolean) {
                     status = '';
                 "
             >
-                <option value="">Ұйымдарды тіркеу</option>
+                <option value="">{{ t('Ұйымдарды тіркеу') }}</option>
                 <option value="teacher-accounts">
-                    Педагог аккаунттарын тіркеу
+                    {{ t('Педагог аккаунттарын тіркеу') }}
                 </option>
                 <option v-for="code in workloadTypes" :key="code" :value="code">
-                    {{ types[code] }} · жүктеме
+                    {{ types[code] }} {{ t('· жүктеме') }}
                 </option>
             </select>
         </label>
@@ -151,8 +159,8 @@ async function submit(save: boolean) {
         >
             {{
                 teacherAccounts
-                    ? 'Педагог аккаунттарының XLSX үлгісі'
-                    : 'Жүктеме XLSX үлгісі'
+                    ? t('Педагог аккаунттарының XLSX үлгісі')
+                    : t('Жүктеме XLSX үлгісі')
             }}
         </a>
         <ul v-else class="flex flex-wrap gap-4 text-sm">
@@ -165,24 +173,30 @@ async function submit(save: boolean) {
             </li>
         </ul>
         <p v-if="teacherAccounts" class="text-sm">
-            Әр жұмыс орнын жеке жолға енгізіңіз. Алғашқы құпиясөзді педагог
-            «Құпиясөзді ұмыттыңыз ба?» бөлімі арқылы өзі орнатады.
+            {{
+                t(
+                    'Әр жұмыс орнын жеке жолға енгізіңіз. Алғашқы құпиясөзді педагог «Құпиясөзді ұмыттыңыз ба?» бөлімі арқылы өзі орнатады.',
+                )
+            }}
         </p>
         <details class="space-y-2 text-sm">
             <summary class="cursor-pointer">
-                Аумақ кодтарын анықтамалықтан қарау
+                {{ t('Аумақ кодтарын анықтамалықтан қарау') }}
             </summary>
             <p>
-                Сәйкестікті тексеріп, XLSX файлындағы облыс пен аудан кодтарын
-                түзетіңіз.
+                {{
+                    t(
+                        'Сәйкестікті тексеріп, XLSX файлындағы облыс пен аудан кодтарын түзетіңіз.',
+                    )
+                }}
             </p>
             <label class="flex flex-wrap items-center gap-2">
-                Облыс
+                {{ t('Облыс') }}
                 <select
                     v-model="region"
                     class="rounded-md border bg-background p-2"
                 >
-                    <option value="">Облысты таңдаңыз</option>
+                    <option value="">{{ t('Облысты таңдаңыз') }}</option>
                     <option
                         v-for="item in regions"
                         :key="item.code"
@@ -201,7 +215,7 @@ async function submit(save: boolean) {
                 </li>
             </ul>
             <p v-else-if="region || !regions.length">
-                Тіркелген аумақтар табылмады.
+                {{ t('Тіркелген аумақтар табылмады.') }}
             </p>
         </details>
         <form
@@ -209,7 +223,7 @@ async function submit(save: boolean) {
             @submit.prevent="submit(false)"
         >
             <label class="grid gap-1 text-sm">
-                XLSX файлы
+                {{ t('XLSX файлы') }}
                 <input
                     type="file"
                     accept=".xlsx"
@@ -222,7 +236,7 @@ async function submit(save: boolean) {
                 :disabled="busy || !file"
                 class="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
             >
-                Алдын ала тексеру
+                {{ t('Алдын ала тексеру') }}
             </button>
             <button
                 v-if="token"
@@ -231,7 +245,7 @@ async function submit(save: boolean) {
                 class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50"
                 @click="submit(true)"
             >
-                Растау және сақтау
+                {{ t('Растау және сақтау') }}
             </button>
         </form>
         <p
@@ -246,12 +260,20 @@ async function submit(save: boolean) {
             <table class="w-full text-left text-sm">
                 <thead>
                     <tr class="border-b">
-                        <th class="p-2">Жол</th>
-                        <th v-if="!teacherAccounts" class="p-2">Ұйым</th>
-                        <th v-if="!teacherAccounts" class="p-2">БСН</th>
-                        <th v-if="!teacherAccounts" class="p-2">Түрі</th>
-                        <th v-if="!teacherAccounts" class="p-2">Аумақ коды</th>
-                        <th class="p-2">Тексеру нәтижесі</th>
+                        <th class="p-2">{{ t('Жол') }}</th>
+                        <th v-if="!teacherAccounts" class="p-2">
+                            {{ t('Ұйым') }}
+                        </th>
+                        <th v-if="!teacherAccounts" class="p-2">
+                            {{ t('БСН') }}
+                        </th>
+                        <th v-if="!teacherAccounts" class="p-2">
+                            {{ t('Түрі') }}
+                        </th>
+                        <th v-if="!teacherAccounts" class="p-2">
+                            {{ t('Аумақ коды') }}
+                        </th>
+                        <th class="p-2">{{ t('Тексеру нәтижесі') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -285,7 +307,7 @@ async function submit(save: boolean) {
                                     {{ message }}
                                 </li>
                             </ul>
-                            <span v-else>Жарамды</span>
+                            <span v-else>{{ t('Жарамды') }}</span>
                         </td>
                     </tr>
                 </tbody>

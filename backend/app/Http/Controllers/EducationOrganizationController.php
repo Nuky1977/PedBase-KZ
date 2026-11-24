@@ -9,6 +9,7 @@ use App\Services\EducationOrganizationRegistration;
 use App\Services\EducationWorkloadImport;
 use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
+use App\Services\SpreadsheetLabels;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -112,12 +113,12 @@ class EducationOrganizationController extends Controller
         abort_unless(config('pedbase.education_catalog_enabled'), 404);
         abort_unless($request->user()->isAdmin(), 403);
         if ($type === 'teacher-accounts') {
-            $path = $export->xlsx([array_values(SpreadsheetImport::CATALOG_TEACHER_COLUMNS)], [
-                ['Файлға құпиясөз, ЖСН немесе жеке құжат деректерін қоспаңыз.'],
-                ['Әр жұмыс орнын бөлек жолға жазыңыз. Логин, email және аты-жөн барлық жолда бірдей болуы керек.'],
-                ['Негізгі жұмыс орны үшін primary, қосымша жұмыс орны үшін secondary қолданыңыз.'],
-                ['Ұйым түрінің кодтары: '.implode(', ', array_keys(EducationOrganizationRegistration::TYPES))],
-                ['Педагог алғашқы құпиясөзін тіркелген email арқылы «Құпиясөзді ұмыттыңыз ба?» бөлімінде орнатады.'],
+            $path = $export->xlsx([array_values(SpreadsheetLabels::translate(SpreadsheetImport::CATALOG_TEACHER_COLUMNS))], [
+                [__('Файлға құпиясөз, ЖСН немесе жеке құжат деректерін қоспаңыз.')],
+                [__('Әр жұмыс орнын бөлек жолға жазыңыз. Логин, email және аты-жөн барлық жолда бірдей болуы керек.')],
+                [__('Негізгі жұмыс орны үшін primary, қосымша жұмыс орны үшін secondary қолданыңыз.')],
+                [__('Ұйым түрінің кодтары: :codes', ['codes' => implode(', ', array_keys(EducationOrganizationRegistration::TYPES))])],
+                [__('Педагог алғашқы құпиясөзін тіркелген email арқылы «Құпиясөзді ұмыттыңыз ба?» бөлімінде орнатады.')],
             ]);
 
             return response()->download($path, 'pedbase-education-teacher-accounts.xlsx', [
@@ -151,10 +152,10 @@ class EducationOrganizationController extends Controller
             default => abort(404),
         };
         $columns = ['Аты-жөні', 'Логин', 'Email', 'Ұйым БСН', 'Лауазымы', ...$additionalColumns];
-        $path = $export->xlsx([$columns], [
-            ['Жобалық үлгі'],
-            ['Баған құрылымын келісуге арналған. Осы үлгі арқылы импорт кейін іске қосылады.'],
-            ['Нақты жеке деректерді енгізбеңіз.'],
+        $path = $export->xlsx([SpreadsheetLabels::translate($columns)], [
+            [__('Жобалық үлгі')],
+            [__('Баған құрылымын келісуге арналған. Осы үлгі арқылы импорт кейін іске қосылады.')],
+            [__('Нақты жеке деректерді енгізбеңіз.')],
         ]);
 
         return response()->download($path, "pedbase-education-{$type}-draft.xlsx", [

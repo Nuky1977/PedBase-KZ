@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SpreadsheetImportRequest;
 use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
+use App\Services\SpreadsheetLabels;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -26,22 +27,22 @@ class SpreadsheetImportController extends Controller
 
     public function template(string $kind, SpreadsheetExport $export): BinaryFileResponse
     {
-        $columns = array_values(SpreadsheetImport::COLUMNS[$kind]);
+        $columns = array_values(SpreadsheetLabels::translate(SpreadsheetImport::COLUMNS[$kind]));
         $example = $kind === 'schools'
             ? ['Үлгі мектебі', 'ҮМ', '000000000001', 'Мектеп', 'Үлгі елді мекені', 'Иә']
             : ['Үлгі Педагог', 'ulgi_pedagog', 'teacher@example.invalid', '000000000001', 'MAT', 'Мұғалім', '1,50', 2026];
         $instructions = [
-            ['Нұсқаулық'],
-            ['Бірінші парақты толтырыңыз. Бірінші жолдағы баған атауларын сақтаңыз.'],
-            ['Мысал тек осы парақта. Үлгі деректерін жүктемеңіз.'],
-            ['БСН: дәл 12 цифр. Алдыңғы нөл сақталуы үшін Excel-де мәтін пішімін қолданыңыз.'],
-            ['Ең көбі 100 дерек жолы және 2 МБ. Формула, макрос, сыртқы байланыс, ЖСН немесе құпиясөз қоспаңыз.'],
+            [__('Нұсқаулық')],
+            [__('Бірінші парақты толтырыңыз. Бірінші жолдағы баған атауларын сақтаңыз.')],
+            [__('Мысал тек осы парақта. Үлгі деректерін жүктемеңіз.')],
+            [__('БСН: дәл 12 цифр. Алдыңғы нөл сақталуы үшін Excel-де мәтін пішімін қолданыңыз.')],
+            [__('Ең көбі 100 дерек жолы және 2 МБ. Формула, макрос, сыртқы байланыс, ЖСН немесе құпиясөз қоспаңыз.')],
             ...($kind === 'schools' ? [
-                ['Атауы, БСН және белсенділік міндетті. Белсенділікке «Иә» немесе «Жоқ» енгізіңіз.'],
+                [__('Атауы, БСН және белсенділік міндетті. Белсенділікке «Иә» немесе «Жоқ» енгізіңіз.')],
             ] : [
-                ['Мектеп БСН-і белсенді мектепке, пән коды бар пәнге сәйкес келуі керек.'],
-                ['Әр пәнді бөлек жолға жазыңыз. Бір педагогтің логині, аты-жөні және email-ы бірдей болсын.'],
-                ['Педагогтің бірінші мектебі негізгі жұмыс орны болады. 2026 — 2026–2027 оқу жылы.'],
+                [__('Мектеп БСН-і белсенді мектепке, пән коды бар пәнге сәйкес келуі керек.')],
+                [__('Әр пәнді бөлек жолға жазыңыз. Бір педагогтің логині, аты-жөні және email-ы бірдей болсын.')],
+                [__('Педагогтің бірінші мектебі негізгі жұмыс орны болады. 2026 — 2026–2027 оқу жылы.')],
             ]),
             $columns,
             $example,
@@ -60,7 +61,7 @@ class SpreadsheetImportController extends Controller
         try {
             $result = $import->inspect($kind, $path);
         } catch (QueryException) {
-            throw ValidationException::withMessages(['file' => 'Тексеру аяқталмады. Файлды кейін қайта тексеріңіз.']);
+            throw ValidationException::withMessages(['file' => __('Тексеру аяқталмады. Файлды кейін қайта тексеріңіз.')]);
         }
         $token = $result['errors'] === [] ? Crypt::encrypt([
             'actor' => $request->user()->id,
@@ -82,13 +83,13 @@ class SpreadsheetImportController extends Controller
         }
         if (! is_array($token) || ($token['actor'] ?? null) !== $request->user()->id || ($token['kind'] ?? null) !== $kind
             || ($token['expires'] ?? 0) <= now()->timestamp || ($token['digest'] ?? null) !== hash_file('sha256', $path)) {
-            throw ValidationException::withMessages(['file' => 'Алдын ала тексерілген файл сәйкес келмейді немесе растау мерзімі аяқталған.']);
+            throw ValidationException::withMessages(['file' => __('Алдын ала тексерілген файл сәйкес келмейді немесе растау мерзімі аяқталған.')]);
         }
         try {
             $created = $import->save($kind, $path);
         } catch (QueryException) {
             // SQL exceptions can contain original import values.
-            throw ValidationException::withMessages(['file' => 'Импорт сақталмады. Қайталанған жазбалар мен анықтамалықтарды қайта тексеріңіз.']);
+            throw ValidationException::withMessages(['file' => __('Импорт сақталмады. Қайталанған жазбалар мен анықтамалықтарды қайта тексеріңіз.')]);
         }
 
         return response()->json(['created' => $created])->header('Cache-Control', 'private, no-store');

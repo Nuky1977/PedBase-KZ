@@ -2,7 +2,10 @@
 import { Head, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 import PageLinks from '@/components/PageLinks.vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { exportMethod, index } from '@/routes/education-organizations/reports';
+
+const { t } = useTranslation();
 
 type Filters = {
     report: string;
@@ -43,31 +46,31 @@ const keys = computed(() =>
 );
 
 const detailLabels: Record<string, string> = {
-    specialty_code: 'Мамандық коды',
-    specialty_name: 'Мамандық',
-    qualification_code: 'Біліктілік коды',
-    qualification_name: 'Біліктілік',
-    program: 'Бағдарлама',
-    module: 'Модуль',
-    subject: 'Пән',
-    direction: 'Бағыт',
-    age_group: 'Жас тобы',
-    category: 'Санат',
-    club: 'Үйірме',
-    section: 'Секция',
-    classifier_source: 'Сыныптауыштың дереккөзі',
-    classifier_revision: 'Сыныптауыш редакциясы',
-    classifier_specialty_name: 'Мамандықтың ресми атауы',
-    classifier_qualification_name: 'Біліктіліктің ресми атауы',
+    specialty_code: t('Мамандық коды'),
+    specialty_name: t('Мамандық'),
+    qualification_code: t('Біліктілік коды'),
+    qualification_name: t('Біліктілік'),
+    program: t('Бағдарлама'),
+    module: t('Модуль'),
+    subject: t('Пән'),
+    direction: t('Бағыт'),
+    age_group: t('Жас тобы'),
+    category: t('Санат'),
+    club: t('Үйірме'),
+    section: t('Секция'),
+    classifier_source: t('Сыныптауыштың дереккөзі'),
+    classifier_revision: t('Сыныптауыш редакциясы'),
+    classifier_specialty_name: t('Мамандықтың ресми атауы'),
+    classifier_qualification_name: t('Біліктіліктің ресми атауы'),
 };
 const valueLabels: Record<string, Record<string, string>> = {
-    was_primary: { '0': 'Қосымша', '1': 'Негізгі' },
+    was_primary: { '0': t('Қосымша'), '1': t('Негізгі') },
     unit: {
-        academic_hour: 'Академиялық сағат',
-        clock_hour: 'Сағат',
-        fte: 'Мөлшерлеме',
+        academic_hour: t('Академиялық сағат'),
+        clock_hour: t('Сағат'),
+        fte: t('Мөлшерлеме'),
     },
-    period: { week: 'Апта', academic_year: 'Оқу жылы' },
+    period: { week: t('Апта'), academic_year: t('Оқу жылы') },
 };
 
 function display(key: string, value: string | number | null) {
@@ -117,13 +120,13 @@ function filter() {
 
 <template>
     <section class="space-y-5 p-4 md:p-6">
-        <Head title="Каталог есептері" />
+        <Head :title="t('Каталог есептері')" />
         <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Каталог есептері
+            {{ t('Каталог есептері') }}
         </h1>
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="filter">
             <label class="grid gap-1 text-sm"
-                >Есеп
+                >{{ t('Есеп') }}
                 <select
                     v-model="form.report"
                     class="rounded-md border bg-background p-2"
@@ -139,7 +142,7 @@ function filter() {
             </label>
             <template v-if="isWorkload">
                 <label class="grid gap-1 text-sm">
-                    Пән
+                    {{ t('Пән') }}
                     <input
                         v-model="form.subject"
                         maxlength="150"
@@ -147,7 +150,7 @@ function filter() {
                     />
                 </label>
                 <label class="grid gap-1 text-sm">
-                    Кәсіптік модуль
+                    {{ t('Кәсіптік модуль') }}
                     <input
                         v-model="form.module"
                         maxlength="150"
@@ -155,12 +158,12 @@ function filter() {
                     />
                 </label>
                 <label class="grid gap-1 text-sm">
-                    Өлшем бірлігі
+                    {{ t('Өлшем бірлігі') }}
                     <select
                         v-model="form.unit"
                         class="rounded-md border bg-background p-2"
                     >
-                        <option value="">Барлығы</option>
+                        <option value="">{{ t('Барлығы') }}</option>
                         <option
                             v-for="(label, code) in valueLabels.unit"
                             :key="code"
@@ -171,12 +174,12 @@ function filter() {
                     </select>
                 </label>
                 <label class="grid gap-1 text-sm">
-                    Есептеу кезеңі
+                    {{ t('Есептеу кезеңі') }}
                     <select
                         v-model="form.period"
                         class="rounded-md border bg-background p-2"
                     >
-                        <option value="">Барлығы</option>
+                        <option value="">{{ t('Барлығы') }}</option>
                         <option
                             v-for="(label, code) in valueLabels.period"
                             :key="code"
@@ -188,7 +191,7 @@ function filter() {
                 </label>
             </template>
             <label class="grid gap-1 text-sm"
-                >Ұйым түрінің коды
+                >{{ t('Ұйым түрінің коды') }}
                 <input
                     v-model="form.type"
                     maxlength="50"
@@ -196,7 +199,7 @@ function filter() {
                 />
             </label>
             <label class="grid gap-1 text-sm"
-                >Облыс немесе қала коды
+                >{{ t('Облыс немесе қала коды') }}
                 <input
                     v-model="form.region"
                     maxlength="32"
@@ -204,7 +207,7 @@ function filter() {
                 />
             </label>
             <label class="grid gap-1 text-sm"
-                >Аудан немесе қала коды
+                >{{ t('Аудан немесе қала коды') }}
                 <input
                     v-model="form.area"
                     maxlength="32"
@@ -212,7 +215,7 @@ function filter() {
                 />
             </label>
             <label v-if="isWorkload" class="grid gap-1 text-sm"
-                >Оқу жылы
+                >{{ t('Оқу жылы') }}
                 <input
                     v-model.number="form.year"
                     type="number"
@@ -222,7 +225,7 @@ function filter() {
                 />
             </label>
             <label class="grid gap-1 text-sm">
-                Педагогтің толық аты
+                {{ t('Педагогтің толық аты') }}
                 <input
                     v-model="form.teacher"
                     maxlength="255"
@@ -233,7 +236,7 @@ function filter() {
                 v-if="form.report === 'categories'"
                 class="grid gap-1 text-sm"
             >
-                Біліктілік санаты
+                {{ t('Біліктілік санаты') }}
                 <input
                     v-model="form.category"
                     maxlength="150"
@@ -241,7 +244,7 @@ function filter() {
                 />
             </label>
             <label v-if="form.report === 'courses'" class="grid gap-1 text-sm">
-                Курс провайдері
+                {{ t('Курс провайдері') }}
                 <input
                     v-model="form.provider"
                     maxlength="255"
@@ -250,7 +253,7 @@ function filter() {
             </label>
             <template v-if="form.report === 'categories'">
                 <label class="grid gap-1 text-sm">
-                    Аттестаттау күні (бастап)
+                    {{ t('Аттестаттау күні (бастап)') }}
                     <input
                         v-model="form.awarded_from"
                         type="date"
@@ -258,7 +261,7 @@ function filter() {
                     />
                 </label>
                 <label class="grid gap-1 text-sm">
-                    Аттестаттау күні (дейін)
+                    {{ t('Аттестаттау күні (дейін)') }}
                     <input
                         v-model="form.awarded_until"
                         type="date"
@@ -267,22 +270,24 @@ function filter() {
                     />
                 </label>
             </template>
-            <button class="rounded-md border px-3 py-2 text-sm">Көрсету</button>
+            <button class="rounded-md border px-3 py-2 text-sm">
+                {{ t('Көрсету') }}
+            </button>
         </form>
         <nav class="flex gap-4 text-sm">
             <a
                 class="underline"
                 :href="exportMethod.url('csv', { query: filters })"
-                >CSV жүктеу</a
+                >{{ t('CSV жүктеу') }}</a
             >
             <a
                 class="underline"
                 :href="exportMethod.url('xlsx', { query: filters })"
-                >XLSX жүктеу</a
+                >{{ t('XLSX жүктеу') }}</a
             >
         </nav>
         <p v-if="!rows.data.length" class="text-sm text-muted-foreground">
-            Қолжетімді жазбалар табылмады.
+            {{ t('Қолжетімді жазбалар табылмады.') }}
         </p>
         <div v-else class="overflow-x-auto">
             <table class="w-full text-left text-sm">

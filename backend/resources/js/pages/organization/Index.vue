@@ -4,9 +4,12 @@ import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import WorkplaceStatistics from '@/components/WorkplaceStatistics.vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { school as employment } from '@/routes/admin/employment';
 import { access, school } from '@/routes/organization';
 import { index as reports } from '@/routes/reports';
+
+const { t } = useTranslation();
 
 const props = defineProps<{
     schools: {
@@ -28,9 +31,9 @@ const props = defineProps<{
 }>();
 
 const titles = {
-    admin: 'Білім беру ұйымдары',
-    school_admin: 'Мектеп әкімшісінің кабинеті',
-    methodist: 'Әдіскер кабинеті',
+    admin: t('Білім беру ұйымдары'),
+    school_admin: t('Мектеп әкімшісінің кабинеті'),
+    methodist: t('Әдіскер кабинеті'),
 };
 </script>
 
@@ -41,16 +44,18 @@ const titles = {
             <h1 class="text-2xl font-semibold">{{ titles[props.role] }}</h1>
             <div class="flex flex-wrap gap-2">
                 <Button variant="outline" as-child
-                    ><Link :href="reports()">Есептер</Link></Button
+                    ><Link :href="reports()">{{ t('Есептер') }}</Link></Button
                 >
                 <Button v-if="canManageAccess" as-child
-                    ><Link :href="access()">Өкілеттіктер</Link></Button
+                    ><Link :href="access()">{{
+                        t('Өкілеттіктер')
+                    }}</Link></Button
                 >
             </div>
         </header>
         <WorkplaceStatistics :statistics="statistics" />
         <p v-if="!schools.data.length" class="text-muted-foreground">
-            Сізге қолжетімді мектеп әлі бекітілмеген.
+            {{ t('Сізге қолжетімді мектеп әлі бекітілмеген.') }}
         </p>
         <Card v-for="item in schools.data" :key="item.id" class="py-4">
             <CardContent
@@ -59,15 +64,17 @@ const titles = {
                 <h2 class="font-medium">{{ item.name }}</h2>
                 <div class="flex flex-wrap gap-2">
                     <Button variant="outline" as-child
-                        ><Link :href="school(item.id)">Педагогтер</Link></Button
+                        ><Link :href="school(item.id)">{{
+                            t('Педагогтер')
+                        }}</Link></Button
                     >
                     <Button
                         v-if="canManageEmployment"
                         variant="outline"
                         as-child
-                        ><Link :href="employment(item.id)"
-                            >Еңбек деректері</Link
-                        ></Button
+                        ><Link :href="employment(item.id)">{{
+                            t('Еңбек деректері')
+                        }}</Link></Button
                     >
                 </div>
             </CardContent>

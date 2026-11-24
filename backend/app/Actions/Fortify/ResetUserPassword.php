@@ -20,7 +20,7 @@ class ResetUserPassword implements ResetsUserPasswords
     public function reset(User $user, array $input): void
     {
         if ($user->catalog_onboarding_pending && ! $user->catalogPasswordDeliveryEnabled()) {
-            throw ValidationException::withMessages(['email' => 'Пошта жеткізілімі қолжетімсіз. Әкімшіге хабарласыңыз.']);
+            throw ValidationException::withMessages(['email' => __('Пошта жеткізілімі қолжетімсіз. Әкімшіге хабарласыңыз.')]);
         }
         Validator::make($input, [
             'password' => $this->passwordRules(),

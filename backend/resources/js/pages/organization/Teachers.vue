@@ -4,6 +4,7 @@ import { computed, watch } from 'vue';
 import PageLinks from '@/components/PageLinks.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/composables/useTranslation';
 import { show } from '@/routes/dossiers';
 import {
     index,
@@ -11,12 +12,14 @@ import {
     teachers as directory,
 } from '@/routes/organization';
 
+const { t } = useTranslation();
+
 const fields = [
-    { key: 'name', label: 'Аты-жөні' },
-    { key: 'organization', label: 'Ұйым атауы' },
-    { key: 'subject', label: 'Пән атауы немесе коды' },
-    { key: 'position', label: 'Лауазымы' },
-    { key: 'category', label: 'Біліктілік санаты' },
+    { key: 'name', label: t('Аты-жөні') },
+    { key: 'organization', label: t('Ұйым атауы') },
+    { key: 'subject', label: t('Пән атауы немесе коды') },
+    { key: 'position', label: t('Лауазымы') },
+    { key: 'category', label: t('Біліктілік санаты') },
 ] as const;
 
 type Filters = Record<(typeof fields)[number]['key'], string>;
@@ -66,10 +69,10 @@ function search() {
 
 <template>
     <div class="mx-auto w-full max-w-7xl min-w-0 space-y-5 p-4 sm:p-8">
-        <Head title="Педагогтер" />
+        <Head :title="t('Педагогтер')" />
         <header class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-                <h1 class="text-2xl font-semibold">Педагогтер</h1>
+                <h1 class="text-2xl font-semibold">{{ t('Педагогтер') }}</h1>
                 <p
                     v-if="school"
                     class="mt-1 text-sm wrap-anywhere text-muted-foreground"
@@ -78,12 +81,14 @@ function search() {
                 </p>
             </div>
             <Button variant="outline" class="min-h-11" as-child
-                ><Link :href="index()">Мектептерге оралу</Link></Button
+                ><Link :href="index()">{{
+                    t('Мектептерге оралу')
+                }}</Link></Button
             >
         </header>
         <form
             class="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 xl:grid-cols-5"
-            aria-label="Педагогтерді іздеу"
+            :aria-label="t('Педагогтерді іздеу')"
             @submit.prevent="search"
         >
             <label
@@ -110,25 +115,27 @@ function search() {
                     type="submit"
                     class="min-h-11"
                     :disabled="form.processing"
-                    >Іздеу</Button
+                    >{{ t('Іздеу') }}</Button
                 >
                 <Button variant="outline" class="min-h-11" as-child
-                    ><Link :href="endpoint">Тазарту</Link></Button
+                    ><Link :href="endpoint">{{ t('Тазарту') }}</Link></Button
                 >
             </div>
         </form>
         <p role="status" class="text-sm text-muted-foreground">
             {{
                 form.processing
-                    ? 'Ізделіп жатыр…'
-                    : `Табылған педагогтер: ${teachers.total}`
+                    ? t('Ізделіп жатыр…')
+                    : t('Табылған педагогтер: :count', {
+                          count: teachers.total,
+                      })
             }}
         </p>
         <p
             v-if="!teachers.data.length"
             class="rounded-xl border border-dashed p-5 text-muted-foreground"
         >
-            Іздеуге сәйкес педагог табылмады.
+            {{ t('Іздеуге сәйкес педагог табылмады.') }}
         </p>
         <ul v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <li
@@ -148,7 +155,9 @@ function search() {
                 >
                 <h2 class="font-semibold wrap-anywhere">{{ teacher.name }}</h2>
                 <Button class="mt-auto min-h-11" variant="outline" as-child
-                    ><Link :href="show(teacher.id)">Жеке іс</Link></Button
+                    ><Link :href="show(teacher.id)">{{
+                        t('Жеке іс')
+                    }}</Link></Button
                 >
             </li>
         </ul>

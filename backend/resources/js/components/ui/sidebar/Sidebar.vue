@@ -5,10 +5,15 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
 import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 import { Button } from '@/components/ui/button'
 import { X } from '@lucide/vue'
 import { DialogClose } from 'reka-ui'
 import { SIDEBAR_WIDTH_MOBILE, useSidebar } from "./utils"
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
+
 
 defineOptions({
   inheritAttrs: false,
@@ -45,14 +50,15 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       }"
     >
       <SheetHeader class="flex-row items-center justify-between border-b px-4 py-2">
-        <SheetTitle>Навигация</SheetTitle>
-        <SheetDescription class="sr-only">Жүйе бөлімдерінің мәзірі</SheetDescription>
+        <SheetTitle>{{ t('Навигация') }}</SheetTitle>
+        <SheetDescription class="sr-only">{{ t('Жүйе бөлімдерінің мәзірі') }}</SheetDescription>
         <DialogClose as-child>
-          <Button variant="ghost" size="icon" class="size-11" aria-label="Мәзірді жабу">
+          <Button variant="ghost" size="icon" class="size-11" :aria-label="t('Мәзірді жабу')">
             <X aria-hidden="true" />
           </Button>
         </DialogClose>
       </SheetHeader>
+      <LocaleSwitcher class="px-4" />
       <div class="flex min-h-0 w-full flex-1 flex-col">
         <slot />
       </div>

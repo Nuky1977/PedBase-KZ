@@ -25,7 +25,7 @@ class CollegeQualificationReference
         $key = $specialty.','.$qualification;
         if (! isset($this->pairs[$key])) {
             throw ValidationException::withMessages([
-                'qualification_code' => 'Мамандық пен біліктілік кодтарының жұбы №500 бұйрықтың сыныптауышында жоқ.',
+                'qualification_code' => __('Мамандық пен біліктілік кодтарының жұбы №500 бұйрықтың сыныптауышында жоқ.'),
             ]);
         }
 
@@ -33,7 +33,7 @@ class CollegeQualificationReference
             $path = resource_path('reference/college-qualification-names.json');
             $contents = is_readable($path) ? file_get_contents($path) : false;
             if ($contents === false || hash('sha256', $contents) !== self::NAMES_SHA256) {
-                throw ValidationException::withMessages(['qualification_code' => 'Сыныптауыштағы ресми атаулар анықтамалығы қолжетімсіз.']);
+                throw ValidationException::withMessages(['qualification_code' => __('Сыныптауыштағы ресми атаулар анықтамалығы қолжетімсіз.')]);
             }
             $this->names = json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
         }
@@ -47,7 +47,7 @@ class CollegeQualificationReference
         $contents = is_readable($path) ? file_get_contents($path) : false;
         if ($contents === false || hash('sha256', $contents) !== self::SHA256) {
             throw ValidationException::withMessages([
-                'qualification_code' => 'Мамандықтар мен біліктіліктердің расталған анықтамалығы қолжетімсіз.',
+                'qualification_code' => __('Мамандықтар мен біліктіліктердің расталған анықтамалығы қолжетімсіз.'),
             ]);
         }
 

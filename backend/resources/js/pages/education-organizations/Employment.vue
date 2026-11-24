@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import PageLinks from '@/components/PageLinks.vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { index as reports } from '@/routes/education-organizations/reports';
+
+const { t } = useTranslation();
 
 defineProps<{
     employments: {
@@ -21,18 +24,18 @@ defineProps<{
 
 <template>
     <section class="max-w-2xl space-y-5 p-4 md:p-6">
-        <Head title="Ұйымдардағы жұмыс орындарым" />
+        <Head :title="t('Ұйымдардағы жұмыс орындарым')" />
         <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Ұйымдардағы жұмыс орындарым
+            {{ t('Ұйымдардағы жұмыс орындарым') }}
         </h1>
-        <Link :href="reports()" class="text-sm underline"
-            >Менің жүктемем және кәсіби дамуым</Link
-        >
+        <Link :href="reports()" class="text-sm underline">{{
+            t('Менің жүктемем және кәсіби дамуым')
+        }}</Link>
         <p
             v-if="!employments.data.length"
             class="text-sm text-muted-foreground"
         >
-            Еңбек жазбалары табылмады.
+            {{ t('Еңбек жазбалары табылмады.') }}
         </p>
         <ul v-else class="space-y-3">
             <li
@@ -47,21 +50,21 @@ defineProps<{
                 <p class="text-sm text-muted-foreground">
                     {{
                         employment.is_primary
-                            ? 'Негізгі жұмыс орны'
-                            : 'Қосымша жұмыс орны'
+                            ? t('Негізгі жұмыс орны')
+                            : t('Қосымша жұмыс орны')
                     }}
                     ·
                     {{
                         employment.status === 'active'
-                            ? 'Белсенді'
-                            : 'Белсенді емес'
+                            ? t('Белсенді')
+                            : t('Белсенді емес')
                     }}
                 </p>
                 <p
                     v-if="employment.organization_archived"
                     class="text-sm text-muted-foreground"
                 >
-                    Ұйым мұрағатталған
+                    {{ t('Ұйым мұрағатталған') }}
                 </p>
             </li>
         </ul>

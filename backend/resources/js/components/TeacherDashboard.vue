@@ -8,9 +8,12 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import WorkplaceStatistics from '@/components/WorkplaceStatistics.vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { show as dossier } from '@/routes/dossiers';
 import { organizationEmployment } from '@/routes/teacher';
 import { index as employment } from '@/routes/teacher/employment';
+
+const { t } = useTranslation();
 
 const page = usePage();
 defineProps<{
@@ -24,9 +27,9 @@ const actions = computed(() => {
     }
 
     const links = [
-        { title: 'Жеке ісім', href: dossier(user.id), icon: FolderOpen },
+        { title: t('Жеке ісім'), href: dossier(user.id), icon: FolderOpen },
         {
-            title: 'Мектептегі еңбек деректерім',
+            title: t('Мектептегі еңбек деректерім'),
             href: employment(),
             icon: BriefcaseBusiness,
         },
@@ -34,7 +37,7 @@ const actions = computed(() => {
 
     if (page.props.educationCatalogEnabled) {
         links.push({
-            title: 'Ұйымдардағы жұмыс орындарым',
+            title: t('Ұйымдардағы жұмыс орындарым'),
             href: organizationEmployment(),
             icon: Building2,
         });
@@ -46,9 +49,9 @@ const actions = computed(() => {
 
 <template>
     <section class="mx-auto w-full max-w-7xl space-y-5 p-4 sm:p-8">
-        <Head title="Педагог кабинеті" />
+        <Head :title="t('Педагог кабинеті')" />
         <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Педагог кабинеті
+            {{ t('Педагог кабинеті') }}
         </h1>
         <WorkplaceStatistics :statistics="placements" />
         <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

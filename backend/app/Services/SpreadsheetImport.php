@@ -38,15 +38,13 @@ class SpreadsheetImport
         $data = $this->reader->read($path);
         $columns = $kind === self::CATALOG_TEACHERS ? self::CATALOG_TEACHER_COLUMNS : self::COLUMNS[$kind];
         $headers = $data[1] ?? [];
-        if ($kind === self::CATALOG_TEACHERS && ! in_array($columns['placement'], $headers, true)) {
-            unset($columns['placement']);
-        }
-        if (count($headers) !== count($columns) || array_diff($headers, $columns) || count(array_unique($headers)) !== count($columns)) {
-            throw ValidationException::withMessages(['file' => 'Бірінші жолда үлгідегі барлық баған атауы дәл бір рет берілуі керек.']);
+        $columns = SpreadsheetLabels::matchHeader($columns, $headers, $kind === self::CATALOG_TEACHERS ? 'placement' : null);
+        if ($columns === null) {
+            throw ValidationException::withMessages(['file' => __('Бірінші жолда үлгідегі барлық баған атауы дәл бір рет берілуі керек.')]);
         }
         unset($data[1]);
         if ($data === []) {
-            throw ValidationException::withMessages(['file' => 'Импорттайтын дерек жолдары жоқ.']);
+            throw ValidationException::withMessages(['file' => __('Импорттайтын дерек жолдары жоқ.')]);
         }
 
         $map = array_map(fn (string $header) => array_search($header, $columns, true), $headers);
@@ -54,7 +52,7 @@ class SpreadsheetImport
         $errors = [];
         foreach ($data as $number => $cells) {
             if (array_diff_key($cells, $map)) {
-                $errors[$number][] = 'Үлгіде көрсетілмеген бағанға мән енгізілген.';
+                $errors[$number][] = __('Үлгіде көрсетілмеген бағанға мән енгізілген.');
 
                 continue;
             }
@@ -64,19 +62,19 @@ class SpreadsheetImport
             }
             $row = $this->normalize($kind, $row);
             $validator = Validator::make($row, $this->rules($kind), [
-                'required' => '«:attribute» бағанын толтырыңыз.',
-                'max' => '«:attribute» мәні :max таңбадан аспауы керек.',
-                'digits' => '«:attribute» дәл :digits цифрдан тұруы керек.',
-                'alpha_dash' => '«:attribute» үшін латын әрпі, сан, дефис немесе астыңғы сызық қолданыңыз.',
-                'email' => 'Email пішімі жарамсыз.',
-                'ascii' => 'Email үшін ASCII таңбаларын қолданыңыз.',
-                'is_active.in' => '«Белсенді» бағанына «Иә» немесе «Жоқ» енгізіңіз.',
-                'type.in' => 'Ұйым түрінің коды жарамсыз.',
-                'integer' => '«:attribute» бағанына бүтін сан енгізіңіз.',
-                'numeric' => '«:attribute» бағанына сан енгізіңіз.',
-                'decimal' => 'Апталық жүктемеде екі ондық таңбадан артық болмауы керек.',
-                'between' => '«:attribute» мәні :min мен :max арасында болуы керек.',
-                'regex' => '«Оқу жылы» бағанына төрт таңбалы басталу жылын енгізіңіз.',
+                'required' => __('«:attribute» бағанын толтырыңыз.'),
+                'max' => __('«:attribute» мәні :max таңбадан аспауы керек.'),
+                'digits' => __('«:attribute» дәл :digits цифрдан тұруы керек.'),
+                'alpha_dash' => __('«:attribute» үшін латын әрпі, сан, дефис немесе астыңғы сызық қолданыңыз.'),
+                'email' => __('Email пішімі жарамсыз.'),
+                'ascii' => __('Email үшін ASCII таңбаларын қолданыңыз.'),
+                'is_active.in' => __('«Белсенді» бағанына «Иә» немесе «Жоқ» енгізіңіз.'),
+                'type.in' => __('Ұйым түрінің коды жарамсыз.'),
+                'integer' => __('«:attribute» бағанына бүтін сан енгізіңіз.'),
+                'numeric' => __('«:attribute» бағанына сан енгізіңіз.'),
+                'decimal' => __('Апталық жүктемеде екі ондық таңбадан артық болмауы керек.'),
+                'between' => __('«:attribute» мәні :min мен :max арасында болуы керек.'),
+                'regex' => __('«Оқу жылы» бағанына төрт таңбалы басталу жылын енгізіңіз.'),
             ], $columns);
             if ($validator->fails()) {
                 $errors[$number] = $validator->errors()->all();
@@ -134,7 +132,7 @@ class SpreadsheetImport
         return DB::transaction(function () use ($kind, $path) {
             $result = $this->inspect($kind, $path, lock: true);
             if ($result['errors'] !== []) {
-                throw ValidationException::withMessages(['file' => 'Деректерді сақтау мүмкін болмады. Файлды қайта тексеріңіз.']);
+                throw ValidationException::withMessages(['file' => __('Деректерді сақтау мүмкін болмады. Файлды қайта тексеріңіз.')]);
             }
 
             if ($kind === 'schools') {
@@ -213,11 +211,11 @@ class SpreadsheetImport
         foreach ($rows as $number => $row) {
             $bin = $row['bin'];
             if ($existing->has($bin)) {
-                $errors[$number][] = 'Бұл БСН дерекқорда бұрыннан бар.';
+                $errors[$number][] = __('Бұл БСН дерекқорда бұрыннан бар.');
             }
             if (isset($seen[$bin])) {
-                $errors[$number][] = 'Бұл БСН файлда қайталанған.';
-                $errors[$seen[$bin]][] = 'Бұл БСН файлда қайталанған.';
+                $errors[$number][] = __('Бұл БСН файлда қайталанған.');
+                $errors[$seen[$bin]][] = __('Бұл БСН файлда қайталанған.');
             } else {
                 $seen[$bin] = $number;
             }
@@ -239,19 +237,19 @@ class SpreadsheetImport
             $school = $row['school_id'] = $schools->get($row['bin']);
             $subject = $row['subject_id'] = $subjects->get($row['subject']);
             if ($school === null) {
-                $errors[$number][] = 'БСН бойынша белсенді мектеп табылмады.';
+                $errors[$number][] = __('БСН бойынша белсенді мектеп табылмады.');
             }
             if ($subject === null) {
-                $errors[$number][] = 'Пән коды анықтамалықтан табылмады.';
+                $errors[$number][] = __('Пән коды анықтамалықтан табылмады.');
             }
             if ($logins->has($login) || $emails->has($email)) {
-                $errors[$number][] = 'Логин немесе email дерекқорда бұрыннан бар.';
+                $errors[$number][] = __('Логин немесе email дерекқорда бұрыннан бар.');
             }
             if (isset($teachers[$login]) && $teachers[$login] !== [$email, $row['name']]) {
-                $errors[$number][] = 'Бір логин үшін аты-жөні мен email бірдей болуы керек.';
+                $errors[$number][] = __('Бір логин үшін аты-жөні мен email бірдей болуы керек.');
             }
             if (isset($usedEmails[$email]) && $usedEmails[$email] !== $login) {
-                $errors[$number][] = 'Бір email бірнеше логинге берілген.';
+                $errors[$number][] = __('Бір email бірнеше логинге берілген.');
             }
             if (! isset($teachers[$login])) {
                 $primary[$number] = true;
@@ -260,12 +258,12 @@ class SpreadsheetImport
             $usedEmails[$email] ??= $login;
             $placement = $login.'|'.$row['bin'];
             if (isset($positions[$placement]) && $positions[$placement] !== $row['position_title']) {
-                $errors[$number][] = 'Бір мектептегі лауазым барлық жолда бірдей болуы керек.';
+                $errors[$number][] = __('Бір мектептегі лауазым барлық жолда бірдей болуы керек.');
             }
             $positions[$placement] ??= $row['position_title'];
             $assignment = $placement.'|'.$row['subject'].'|'.$row['academic_year'];
             if (isset($assignments[$assignment])) {
-                $errors[$number][] = 'Бұл мектеп, пән және оқу жылы қайталанған.';
+                $errors[$number][] = __('Бұл мектеп, пән және оқу жылы қайталанған.');
             }
             $assignments[$assignment] = true;
         }
@@ -288,7 +286,7 @@ class SpreadsheetImport
     private function checkCatalogTeachers(array &$rows, array &$errors, bool $lock): void
     {
         if (! Features::enabled(Features::resetPasswords())) {
-            throw ValidationException::withMessages(['file' => 'Педагогті тіркеу үшін құпиясөзді қалпына келтіру қызметі қосулы болуы керек.']);
+            throw ValidationException::withMessages(['file' => __('Педагогті тіркеу үшін құпиясөзді қалпына келтіру қызметі қосулы болуы керек.')]);
         }
         $organizations = DB::table('education_organizations as o')
             ->join('education_organization_types as t', 't.id', '=', 'o.type_id')
@@ -304,27 +302,27 @@ class SpreadsheetImport
             $names = [$email, $row['name']];
             $firstRows[$login] ??= $number;
             if ($existingLogins->has($login) || $existingEmails->has($email)) {
-                $errors[$number][] = 'Логин немесе email дерекқорда бұрыннан бар.';
+                $errors[$number][] = __('Логин немесе email дерекқорда бұрыннан бар.');
             }
             if ((isset($logins[$login]) && $logins[$login] !== $names) || (isset($emails[$email]) && $emails[$email] !== $login)) {
-                $errors[$number][] = 'Файлдағы логин, email және аты-жөн сәйкестігін тексеріңіз.';
+                $errors[$number][] = __('Файлдағы логин, email және аты-жөн сәйкестігін тексеріңіз.');
             }
             $row['placement'] = ($row['placement'] ?? null) ?: (isset($logins[$login]) ? 'secondary' : 'primary');
             if ($row['placement'] === 'primary') {
                 if (isset($primary[$login])) {
-                    $errors[$number][] = 'Бір педагогке бір ғана негізгі жұмыс орны беріледі.';
+                    $errors[$number][] = __('Бір педагогке бір ғана негізгі жұмыс орны беріледі.');
                 }
                 $primary[$login] = true;
             }
             $logins[$login] ??= $names;
             $emails[$email] ??= $login;
             if (isset($placements[$login][$row['bin']])) {
-                $errors[$number][] = 'Осы ұйымдағы жұмыс орны файлда қайталанған.';
+                $errors[$number][] = __('Осы ұйымдағы жұмыс орны файлда қайталанған.');
             }
             $placements[$login][$row['bin']] = true;
             $organization = $organizations->get($row['bin']);
             if ($organization === null || $organization->area !== $row['area'] || $organization->type !== $row['type']) {
-                $errors[$number][] = 'БСН, түр және аумақ бойынша белсенді ұйым табылмады.';
+                $errors[$number][] = __('БСН, түр және аумақ бойынша белсенді ұйым табылмады.');
 
                 continue;
             }
@@ -332,7 +330,7 @@ class SpreadsheetImport
         }
         unset($row);
         foreach (array_diff_key($firstRows, $primary) as $number) {
-            $errors[$number][] = 'Негізгі жұмыс орнын primary деп белгілеңіз.';
+            $errors[$number][] = __('Негізгі жұмыс орнын primary деп белгілеңіз.');
         }
     }
 

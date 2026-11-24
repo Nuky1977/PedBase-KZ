@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SpreadsheetImportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\EducationOrganizationController;
 use App\Http\Controllers\EducationReportController;
+use App\Http\Controllers\InterfaceLocaleController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\Teacher\ProfileController;
 use App\Http\Controllers\TeacherDossierController;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::inertia('/', 'Welcome')->name('home');
+Route::post('/interface-locale', InterfaceLocaleController::class)->name('interface-locale.update');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function (Request $request, TeacherDirectory $directory) {

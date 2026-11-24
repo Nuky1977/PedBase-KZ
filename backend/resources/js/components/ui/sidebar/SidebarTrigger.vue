@@ -4,6 +4,10 @@ import { PanelLeftClose, PanelLeftOpen } from "@lucide/vue"
 import { cn } from "@/lib/utils"
 import { Button } from '@/components/ui/button'
 import { useSidebar } from "./utils"
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
+
 
 const props = defineProps<{
   class?: HTMLAttributes["class"]
@@ -25,6 +29,6 @@ const { isMobile, openMobile, state, toggleSidebar } = useSidebar()
   >
     <PanelLeftOpen v-if="isMobile || state === 'collapsed'" />
     <PanelLeftClose v-else />
-    <span class="sr-only">Навигация мәзірі</span>
+    <span class="sr-only">{{ t('Навигация мәзірі') }}</span>
   </Button>
 </template>

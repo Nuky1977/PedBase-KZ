@@ -105,7 +105,7 @@ class EducationRegistrationController extends Controller
                 $result = $type === null ? $registration->inspect($path) : $workloads->inspect($type, $path);
             }
         } catch (QueryException) {
-            throw ValidationException::withMessages(['file' => 'Анықтамалықтар тексерілмеді. Сұрауды кейін қайталаңыз.']);
+            throw ValidationException::withMessages(['file' => __('Анықтамалықтар тексерілмеді. Сұрауды кейін қайталаңыз.')]);
         }
         $token = $result['has_errors'] ? null : Crypt::encrypt($this->fileIdentity($request, $path) + [
             'expires' => now()->addMinutes(15)->timestamp,
@@ -125,7 +125,7 @@ class EducationRegistrationController extends Controller
         }
         $identity = $this->fileIdentity($request, $path);
         if (! is_array($token) || array_intersect_key($token, $identity) !== $identity || ($token['expires'] ?? 0) <= now()->timestamp) {
-            throw ValidationException::withMessages(['file' => 'Файл немесе әкімші алдын ала қарауға сәйкес келмейді не растау мерзімі аяқталған.']);
+            throw ValidationException::withMessages(['file' => __('Файл немесе әкімші алдын ала қарауға сәйкес келмейді не растау мерзімі аяқталған.')]);
         }
         try {
             $type = $request->validated('workload_type');
@@ -135,7 +135,7 @@ class EducationRegistrationController extends Controller
                 default => $workloads->import($type, $path),
             };
         } catch (QueryException) {
-            throw ValidationException::withMessages(['file' => 'Импорт сақталмады. Файл мен анықтамалықтарды қайта тексеріңіз.']);
+            throw ValidationException::withMessages(['file' => __('Импорт сақталмады. Файл мен анықтамалықтарды қайта тексеріңіз.')]);
         }
 
         return response()->json(['created' => $created])->header('Cache-Control', 'private, no-store');

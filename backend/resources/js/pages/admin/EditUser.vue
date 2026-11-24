@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 
 defineProps<{
     user: {
@@ -14,16 +17,16 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Пайдаланушыны өңдеу" />
+    <Head :title="t('Пайдаланушыны өңдеу')" />
 
     <div class="mx-auto max-w-2xl p-8">
         <div class="mb-6">
             <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Пайдаланушыны өңдеу
+                {{ t('Пайдаланушыны өңдеу') }}
             </h1>
 
             <p class="mt-1 text-sm text-muted-foreground">
-                Пайдаланушы мәліметтерін өзгерту
+                {{ t('Пайдаланушы мәліметтерін өзгерту') }}
             </p>
         </div>
 
@@ -35,7 +38,7 @@ defineProps<{
         >
             <div>
                 <label for="name" class="mb-1 block font-medium">
-                    Аты-жөні
+                    {{ t('Аты-жөні') }}
                 </label>
 
                 <input
@@ -54,7 +57,7 @@ defineProps<{
 
             <div>
                 <label for="username" class="mb-1 block font-medium">
-                    Логин
+                    {{ t('Логин') }}
                 </label>
 
                 <input
@@ -73,7 +76,7 @@ defineProps<{
 
             <div>
                 <label for="email" class="mb-1 block font-medium">
-                    Email
+                    {{ t('Email') }}
                 </label>
 
                 <input
@@ -91,7 +94,9 @@ defineProps<{
             </div>
 
             <div>
-                <label for="role" class="mb-1 block font-medium"> Рөлі </label>
+                <label for="role" class="mb-1 block font-medium">
+                    {{ t('Рөлі') }}
+                </label>
 
                 <select
                     id="role"
@@ -101,10 +106,12 @@ defineProps<{
                     required
                     class="w-full rounded-md border p-2 disabled:bg-gray-100 disabled:text-muted-foreground"
                 >
-                    <option value="teacher">Педагог</option>
-                    <option value="school_admin">Мектеп әкімшісі</option>
-                    <option value="methodist">Әдіскер</option>
-                    <option value="admin">Жүйе әкімшісі</option>
+                    <option value="teacher">{{ t('Педагог') }}</option>
+                    <option value="school_admin">
+                        {{ t('Мектеп әкімшісі') }}
+                    </option>
+                    <option value="methodist">{{ t('Әдіскер') }}</option>
+                    <option value="admin">{{ t('Жүйе әкімшісі') }}</option>
                 </select>
                 <input
                     v-if="isSelf"
@@ -113,7 +120,7 @@ defineProps<{
                     :value="user.role"
                 />
                 <p v-if="isSelf" class="mt-1 text-sm text-muted-foreground">
-                    Өз аккаунтыңыздың рөлін өзгерте алмайсыз.
+                    {{ t('Өз аккаунтыңыздың рөлін өзгерте алмайсыз.') }}
                 </p>
 
                 <p v-if="errors.role" class="mt-1 text-sm text-red-600">
@@ -127,11 +134,15 @@ defineProps<{
                     :disabled="processing"
                     class="rounded-md bg-black px-5 py-2 text-white disabled:opacity-50"
                 >
-                    {{ processing ? 'Сақталуда...' : 'Өзгерістерді сақтау' }}
+                    {{
+                        processing
+                            ? t('Сақталуда...')
+                            : t('Өзгерістерді сақтау')
+                    }}
                 </button>
 
                 <Link href="/admin/users" class="rounded-md border px-5 py-2">
-                    Болдырмау
+                    {{ t('Болдырмау') }}
                 </Link>
             </div>
         </Form>

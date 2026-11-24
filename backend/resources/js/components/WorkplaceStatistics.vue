@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
+
 defineProps<{
     statistics: {
         catalog: boolean;
@@ -13,13 +17,13 @@ defineProps<{
 <template>
     <section
         class="min-w-0 space-y-3"
-        aria-label="Жұмыс орындарының көрсеткіштері"
+        :aria-label="t('Жұмыс орындарының көрсеткіштері')"
     >
         <h2 class="text-lg font-semibold">
             {{
                 statistics.catalog
-                    ? 'Каталогтағы жұмыс орындары'
-                    : 'Мектептердегі жұмыс орындары'
+                    ? t('Каталогтағы жұмыс орындары')
+                    : t('Мектептердегі жұмыс орындары')
             }}
         </h2>
         <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -28,7 +32,7 @@ defineProps<{
                 class="rounded-xl border bg-card p-4"
             >
                 <dt class="text-sm text-muted-foreground">
-                    Қолжетімді ұйымдар
+                    {{ t('Қолжетімді ұйымдар') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">
                     {{ statistics.organizations }}
@@ -39,7 +43,7 @@ defineProps<{
                 class="rounded-xl border bg-card p-4"
             >
                 <dt class="text-sm text-muted-foreground">
-                    Бірегей педагогтер
+                    {{ t('Бірегей педагогтер') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">
                     {{ statistics.teachers }}
@@ -47,7 +51,7 @@ defineProps<{
             </div>
             <div class="rounded-xl border bg-card p-4">
                 <dt class="text-sm text-muted-foreground">
-                    Негізгі жұмыс орындары
+                    {{ t('Негізгі жұмыс орындары') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">
                     {{ statistics.primary }}
@@ -55,7 +59,7 @@ defineProps<{
             </div>
             <div class="rounded-xl border bg-card p-4">
                 <dt class="text-sm text-muted-foreground">
-                    Қосымша жұмыс орындары
+                    {{ t('Қосымша жұмыс орындары') }}
                 </dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">
                     {{ statistics.secondary }}

@@ -14,12 +14,15 @@ import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import WorkplaceStatistics from '@/components/WorkplaceStatistics.vue';
+import { useTranslation } from '@/composables/useTranslation';
 import { dashboard } from '@/routes/admin';
 import { index as importsIndex } from '@/routes/admin/imports';
 import { index as schoolsIndex } from '@/routes/admin/schools';
 import { index as usersIndex } from '@/routes/admin/users';
 import { index as catalogIndex } from '@/routes/education-organizations';
 import { index as reportsIndex } from '@/routes/reports';
+
+const { t } = useTranslation();
 
 defineOptions({
     layout: {
@@ -54,21 +57,21 @@ const props = defineProps<{
 }>();
 
 const overview = [
-    { key: 'schools', label: 'Барлық мектеп', icon: School },
-    { key: 'activeSchools', label: 'Белсенді мектеп', icon: School },
-    { key: 'teachers', label: 'Педагогтер', icon: GraduationCap },
-    { key: 'users', label: 'Пайдаланушылар', icon: Users },
+    { key: 'schools', label: t('Барлық мектеп'), icon: School },
+    { key: 'activeSchools', label: t('Белсенді мектеп'), icon: School },
+    { key: 'teachers', label: t('Педагогтер'), icon: GraduationCap },
+    { key: 'users', label: t('Пайдаланушылар'), icon: Users },
 ] as const;
 
 const assignments = [
-    { key: 'assignedTeachers', label: 'Мектепке бекітілген педагогтер' },
+    { key: 'assignedTeachers', label: t('Мектепке бекітілген педагогтер') },
     {
         key: 'primaryAssignments',
-        label: 'Негізгі жұмыс орны бойынша бекітулер',
+        label: t('Негізгі жұмыс орны бойынша бекітулер'),
     },
     {
         key: 'secondaryAssignments',
-        label: 'Қосымша жұмыс орны бойынша бекітулер',
+        label: t('Қосымша жұмыс орны бойынша бекітулер'),
     },
 ] as const;
 
@@ -78,25 +81,25 @@ const maxHours = computed(() =>
 );
 
 const activityLabels: Record<string, string> = {
-    'organization.assign': 'Ұйымға бекіту жаңартылды',
-    'employment.save': 'Еңбек деректері сақталды',
-    'assignment.create': 'Жүктеме қосылды',
-    'assignment.update': 'Жүктеме жаңартылды',
-    'spreadsheet.import.schools': 'Мектептер импортталды',
-    'spreadsheet.import.teachers': 'Педагогтер импортталды',
+    'organization.assign': t('Ұйымға бекіту жаңартылды'),
+    'employment.save': t('Еңбек деректері сақталды'),
+    'assignment.create': t('Жүктеме қосылды'),
+    'assignment.update': t('Жүктеме жаңартылды'),
+    'spreadsheet.import.schools': t('Мектептер импортталды'),
+    'spreadsheet.import.teachers': t('Педагогтер импортталды'),
 };
 
 const quickActions = [
-    { label: 'Мектептер', href: schoolsIndex() },
-    { label: 'Пайдаланушылар', href: usersIndex() },
-    { label: 'Excel импорты', href: importsIndex() },
-    { label: 'Есептер', href: reportsIndex() },
+    { label: t('Мектептер'), href: schoolsIndex() },
+    { label: t('Пайдаланушылар'), href: usersIndex() },
+    { label: t('Excel импорты'), href: importsIndex() },
+    { label: t('Есептер'), href: reportsIndex() },
 ];
 </script>
 
 <template>
     <div class="min-h-full flex-1 bg-muted/40">
-        <Head title="Басқару панелі" />
+        <Head :title="t('Басқару панелі')" />
 
         <div
             class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-8 sm:py-10"
@@ -106,24 +109,28 @@ const quickActions = [
                     <h1
                         class="text-3xl font-semibold tracking-tight sm:text-4xl"
                     >
-                        Басқару панелі
+                        {{ t('Басқару панелі') }}
                     </h1>
                     <p class="mt-2 text-sm text-muted-foreground sm:text-base">
-                        Мектептер, педагогтер және олардың жұмыс орындары
+                        {{
+                            t(
+                                'Мектептер, педагогтер және олардың жұмыс орындары',
+                            )
+                        }}
                     </p>
                 </div>
 
-                <nav aria-label="Жылдам өту" class="flex flex-wrap gap-2">
+                <nav :aria-label="t('Жылдам өту')" class="flex flex-wrap gap-2">
                     <Button variant="outline" as-child>
                         <Link :href="usersIndex()">
                             <Users aria-hidden="true" />
-                            Пайдаланушылар
+                            {{ t('Пайдаланушылар') }}
                         </Link>
                     </Button>
                     <Button as-child>
                         <Link :href="schoolsIndex()">
                             <School aria-hidden="true" />
-                            Мектептер
+                            {{ t('Мектептер') }}
                             <ArrowUpRight aria-hidden="true" />
                         </Link>
                     </Button>
@@ -132,7 +139,7 @@ const quickActions = [
 
             <section aria-labelledby="overview-heading" class="space-y-3">
                 <h2 id="overview-heading" class="text-lg font-semibold">
-                    Жалпы көрсеткіштер
+                    {{ t('Жалпы көрсеткіштер') }}
                 </h2>
                 <div
                     class="grid gap-3 sm:grid-cols-2"
@@ -180,7 +187,7 @@ const quickActions = [
                             />
                             <dl>
                                 <dt class="text-sm text-muted-foreground">
-                                    Каталогтағы ұйымдар
+                                    {{ t('Каталогтағы ұйымдар') }}
                                 </dt>
                                 <dd class="text-3xl font-semibold tabular-nums">
                                     {{
@@ -203,16 +210,20 @@ const quickActions = [
                     aria-labelledby="workload-heading"
                 >
                     <h2 id="workload-heading" class="text-lg font-semibold">
-                        Оқу жылдары бойынша мектеп жүктемесі
+                        {{ t('Оқу жылдары бойынша мектеп жүктемесі') }}
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Белсенді еңбек жазбаларындағы апталық сағаттар жиыны
+                        {{
+                            t(
+                                'Белсенді еңбек жазбаларындағы апталық сағаттар жиыны',
+                            )
+                        }}
                     </p>
                     <p
                         v-if="!analytics.workloadByYear.length"
                         class="mt-5 text-sm text-muted-foreground"
                     >
-                        Жүктеме деректері жоқ.
+                        {{ t('Жүктеме деректері жоқ.') }}
                     </p>
                     <ul v-else class="mt-5 space-y-4">
                         <li
@@ -224,10 +235,8 @@ const quickActions = [
                             >
                                 <span>{{ item.year }}–{{ item.year + 1 }}</span>
                                 <span class="font-semibold tabular-nums"
-                                    >{{
-                                        numberFormat.format(item.hours)
-                                    }}
-                                    сағ</span
+                                    >{{ numberFormat.format(item.hours) }}
+                                    {{ t('сағ') }}</span
                                 >
                             </div>
                             <div
@@ -249,13 +258,13 @@ const quickActions = [
                     aria-labelledby="activity-heading"
                 >
                     <h2 id="activity-heading" class="text-lg font-semibold">
-                        Соңғы әрекеттер
+                        {{ t('Соңғы әрекеттер') }}
                     </h2>
                     <p
                         v-if="!analytics.recentActivities.length"
                         class="mt-5 text-sm text-muted-foreground"
                     >
-                        Әрекет тіркелмеген.
+                        {{ t('Әрекет тіркелмеген.') }}
                     </p>
                     <ul v-else class="mt-2 divide-y">
                         <li
@@ -285,7 +294,7 @@ const quickActions = [
                 aria-labelledby="quick-actions"
             >
                 <h2 id="quick-actions" class="mb-3 text-lg font-semibold">
-                    Жылдам әрекеттер
+                    {{ t('Жылдам әрекеттер') }}
                 </h2>
                 <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
                     <Button
@@ -307,7 +316,8 @@ const quickActions = [
                         as-child
                     >
                         <Link :href="catalogIndex()"
-                            >Ұйымдар каталогы <ArrowUpRight aria-hidden="true"
+                            >{{ t('Ұйымдар каталогы') }}
+                            <ArrowUpRight aria-hidden="true"
                         /></Link>
                     </Button>
                 </div>
@@ -326,7 +336,7 @@ const quickActions = [
                         class="size-5 text-muted-foreground"
                         aria-hidden="true"
                     />
-                    Жұмыс орны бойынша бекітулер
+                    {{ t('Жұмыс орны бойынша бекітулер') }}
                 </h2>
                 <Card class="gap-0 py-0 shadow-xs">
                     <CardContent class="p-0">

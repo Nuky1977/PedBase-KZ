@@ -32,8 +32,8 @@ class SpreadsheetImportRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file.*' => 'Көлемі 2 МБ-тан аспайтын XLSX файлын таңдаңыз.',
-            'token.*' => 'Файлды алдын ала қайта тексеріңіз.',
+            'file.*' => __('Көлемі 2 МБ-тан аспайтын XLSX файлын таңдаңыз.'),
+            'token.*' => __('Файлды алдын ала қайта тексеріңіз.'),
         ];
     }
 }

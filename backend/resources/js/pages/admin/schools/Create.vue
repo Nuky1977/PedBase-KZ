@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 </script>
 
 <template>
-    <Head title="Мектеп қосу" />
+    <Head :title="t('Мектеп қосу')" />
 
     <div class="min-h-screen bg-gray-50 p-8">
         <div class="mx-auto max-w-2xl">
             <div class="mb-6">
                 <h1 class="text-3xl font-bold">
-                    Жаңа мектеп қосу
+                    {{ t('Жаңа мектеп қосу') }}
                 </h1>
 
                 <p class="mt-2 text-gray-500">
-                    Аудан мектебінің негізгі мәліметтерін енгізіңіз
+                    {{ t('Аудан мектебінің негізгі мәліметтерін енгізіңіз') }}
                 </p>
             </div>
 
@@ -26,7 +29,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                 >
                     <div>
                         <label for="name" class="mb-1 block font-medium">
-                            Мектептің толық атауы *
+                            {{ t('Мектептің толық атауы *') }}
                         </label>
 
                         <input
@@ -35,20 +38,19 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                             type="text"
                             required
                             class="w-full rounded-md border p-2"
-                            placeholder="Мысалы: Абай атындағы орта мектебі"
+                            :placeholder="
+                                t('Мысалы: Абай атындағы орта мектебі')
+                            "
                         />
 
-                        <p
-                            v-if="errors.name"
-                            class="mt-1 text-sm text-red-600"
-                        >
+                        <p v-if="errors.name" class="mt-1 text-sm text-red-600">
                             {{ errors.name }}
                         </p>
                     </div>
 
                     <div>
                         <label for="short_name" class="mb-1 block font-medium">
-                            Қысқаша атауы
+                            {{ t('Қысқаша атауы') }}
                         </label>
 
                         <input
@@ -56,7 +58,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                             name="short_name"
                             type="text"
                             class="w-full rounded-md border p-2"
-                            placeholder="Мысалы: Абай ОМ"
+                            :placeholder="t('Мысалы: Абай ОМ')"
                         />
 
                         <p
@@ -69,7 +71,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 
                     <div>
                         <label for="bin" class="mb-1 block font-medium">
-                            БСН
+                            {{ t('БСН') }}
                         </label>
 
                         <input
@@ -79,20 +81,17 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                             inputmode="numeric"
                             maxlength="12"
                             class="w-full rounded-md border p-2"
-                            placeholder="12 таңбалы БСН"
+                            :placeholder="t('12 таңбалы БСН')"
                         />
 
-                        <p
-                            v-if="errors.bin"
-                            class="mt-1 text-sm text-red-600"
-                        >
+                        <p v-if="errors.bin" class="mt-1 text-sm text-red-600">
                             {{ errors.bin }}
                         </p>
                     </div>
 
                     <div>
                         <label for="type" class="mb-1 block font-medium">
-                            Мектеп түрі
+                            {{ t('Мектеп түрі') }}
                         </label>
 
                         <select
@@ -100,35 +99,32 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                             name="type"
                             class="w-full rounded-md border p-2"
                         >
-                            <option value="">Таңдаңыз</option>
+                            <option value="">{{ t('Таңдаңыз') }}</option>
                             <option value="Жалпы білім беретін мектеп">
-                                Жалпы білім беретін мектеп
+                                {{ t('Жалпы білім беретін мектеп') }}
                             </option>
                             <option value="Мектеп-гимназия">
-                                Мектеп-гимназия
+                                {{ t('Мектеп-гимназия') }}
                             </option>
                             <option value="Мектеп-лицей">
-                                Мектеп-лицей
+                                {{ t('Мектеп-лицей') }}
                             </option>
                             <option value="Негізгі орта мектеп">
-                                Негізгі орта мектеп
+                                {{ t('Негізгі орта мектеп') }}
                             </option>
                             <option value="Бастауыш мектеп">
-                                Бастауыш мектеп
+                                {{ t('Бастауыш мектеп') }}
                             </option>
                         </select>
 
-                        <p
-                            v-if="errors.type"
-                            class="mt-1 text-sm text-red-600"
-                        >
+                        <p v-if="errors.type" class="mt-1 text-sm text-red-600">
                             {{ errors.type }}
                         </p>
                     </div>
 
                     <div>
                         <label for="locality" class="mb-1 block font-medium">
-                            Елді мекен
+                            {{ t('Елді мекен') }}
                         </label>
 
                         <input
@@ -136,7 +132,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                             name="locality"
                             type="text"
                             class="w-full rounded-md border p-2"
-                            placeholder="Мысалы: Сарқан қаласы"
+                            :placeholder="t('Мысалы: Сарқан қаласы')"
                         />
 
                         <p
@@ -157,7 +153,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                         />
 
                         <label for="is_active" class="font-medium">
-                            Белсенді мектеп
+                            {{ t('Белсенді мектеп') }}
                         </label>
                     </div>
 
@@ -167,14 +163,18 @@ import { Form, Head, Link } from '@inertiajs/vue3';
                             :disabled="processing"
                             class="rounded-md bg-black px-5 py-2 text-white disabled:opacity-50"
                         >
-                            {{ processing ? 'Сақталуда...' : 'Мектепті сақтау' }}
+                            {{
+                                processing
+                                    ? t('Сақталуда...')
+                                    : t('Мектепті сақтау')
+                            }}
                         </button>
 
                         <Link
                             href="/admin/schools"
                             class="rounded-md border px-5 py-2"
                         >
-                            Болдырмау
+                            {{ t('Болдырмау') }}
                         </Link>
                     </div>
                 </Form>

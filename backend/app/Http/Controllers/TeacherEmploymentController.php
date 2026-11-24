@@ -92,7 +92,7 @@ class TeacherEmploymentController extends Controller
             AuditEvent::record('employment.save', 'teacher_employment', $employment->id);
         });
 
-        return back()->with('success', 'Еңбек деректері сақталды.');
+        return back()->with('success', __('Еңбек деректері сақталды.'));
     }
 
     public function addSubject(StoreEmploymentSubjectRequest $request, School $school, User $teacher): RedirectResponse
@@ -102,24 +102,24 @@ class TeacherEmploymentController extends Controller
         try {
             Subject::create($request->validated());
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['code' => 'Бұл пән коды бұрыннан бар.']);
+            throw ValidationException::withMessages(['code' => __('Бұл пән коды бұрыннан бар.')]);
         }
 
-        return back()->with('success', 'Пән анықтамалыққа қосылды.');
+        return back()->with('success', __('Пән анықтамалыққа қосылды.'));
     }
 
     public function addAssignment(SaveTeachingAssignmentRequest $request, School $school, User $teacher): RedirectResponse
     {
         $this->saveAssignment($school, $teacher, $request->validated());
 
-        return back()->with('success', 'Пән жүктемесі қосылды.');
+        return back()->with('success', __('Пән жүктемесі қосылды.'));
     }
 
     public function updateAssignment(SaveTeachingAssignmentRequest $request, School $school, User $teacher, int $assignment): RedirectResponse
     {
         $this->saveAssignment($school, $teacher, $request->validated(), $assignment);
 
-        return back()->with('success', 'Пән жүктемесі жаңартылды.');
+        return back()->with('success', __('Пән жүктемесі жаңартылды.'));
     }
 
     public function removeAssignment(School $school, User $teacher, int $assignment): RedirectResponse
@@ -130,7 +130,7 @@ class TeacherEmploymentController extends Controller
             AuditEvent::record('assignment.remove', 'teaching_assignment', $assignment);
         });
 
-        return back()->with('success', 'Пән жүктемесі алынып тасталды.');
+        return back()->with('success', __('Пән жүктемесі алынып тасталды.'));
     }
 
     public function archive(School $school, User $teacher): RedirectResponse
@@ -141,7 +141,7 @@ class TeacherEmploymentController extends Controller
             AuditEvent::record('employment.archive', 'teacher_employment', $employment->id);
         });
 
-        return back()->with('success', 'Еңбек жазбасы мұрағатталды.');
+        return back()->with('success', __('Еңбек жазбасы мұрағатталды.'));
     }
 
     private function saveAssignment(School $school, User $teacher, array $data, ?int $assignment = null): void
@@ -159,7 +159,7 @@ class TeacherEmploymentController extends Controller
                 AuditEvent::record('assignment.update', 'teaching_assignment', $assignment);
             });
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['subject_id' => 'Бұл пән осы оқу жылына бұрыннан бекітілген.']);
+            throw ValidationException::withMessages(['subject_id' => __('Бұл пән осы оқу жылына бұрыннан бекітілген.')]);
         }
     }
 
