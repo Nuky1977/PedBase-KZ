@@ -5,6 +5,7 @@ use App\Services\SpreadsheetImport;
 use App\Services\SpreadsheetImportReader;
 use App\Services\SpreadsheetLabels;
 use App\UserRole;
+use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
@@ -33,7 +34,7 @@ test('the language endpoint rejects unsupported locales and unsafe return addres
     }
 });
 
-test('validation templates and spreadsheet downloads follow the selected language', function (string $locale, string $reportHeading, string $templateHeading, string $requiredMessage) {
+test('validation templates and spreadsheet downloads follow the selected language', function (string $locale, string $reportHeading, string $templateHeading, string $requiredMessage, string $guideName, string $requiredLabel) {
     $this->withCredentials()->withCookie('pedbase_locale', $locale);
     $this->postJson(route('login.store'), [])->assertUnprocessable()
         ->assertJsonPath('errors.username.0', $requiredMessage);
@@ -54,7 +55,8 @@ test('validation templates and spreadsheet downloads follow the selected languag
         expect($zip->open($sheet))->toBeTrue();
         try {
             expect($zip->getFromName('xl/tables/table1.xml'))->toContain('<autoFilter ref="A1:F2"/>');
-            expect($zip->getFromName('xl/workbook.xml'))->toContain(__('Толтыру нұсқаулығы', locale: $locale));
+            expect($zip->getFromName('xl/workbook.xml'))->toContain('name="'.$guideName.'"');
+            expect($zip->getFromName('xl/worksheets/sheet2.xml'))->toContain('>'.$requiredLabel.'</t>');
             $part = 'xl/worksheets/sheet1.xml';
             $cells = '';
             foreach (array_combine(range('A', 'F'), ['Synthetic school', 'SS', '000000000991', 'school', 'Synthetic locality', 'Иә']) as $column => $value) {
@@ -66,6 +68,14 @@ test('validation templates and spreadsheet downloads follow the selected languag
         }
         $preview = app(SpreadsheetImport::class)->inspect('schools', $sheet);
         expect($preview['errors'])->toBe([])->and($preview['data'][2]['name'])->toBe('Synthetic school');
+        $upload = UploadedFile::fake()->createWithContent('schools.xlsx', file_get_contents($sheet));
+        $token = $this->postJson(route('admin.imports.preview', 'schools'), ['file' => $upload])
+            ->assertOk()->assertJsonPath('valid', 1)->json('token');
+        expect($token)->toBeString();
+        $this->assertDatabaseCount('schools', 0);
+        $this->postJson(route('admin.imports.confirm', 'schools'), ['file' => $upload, 'token' => $token])
+            ->assertOk()->assertJsonPath('created', 1);
+        $this->assertDatabaseHas('schools', ['bin' => '000000000991', 'name' => 'Synthetic school']);
     } finally {
         unlink($sheet);
     }
@@ -79,9 +89,9 @@ test('validation templates and spreadsheet downloads follow the selected languag
         unlink($workbook);
     }
 })->with([
-    'kk' => ['kk', 'Мектеп', 'Атауы', '«логин» өрісін толтырыңыз.'],
-    'ru' => ['ru', 'Школа', 'Название', 'Заполните поле «логин».'],
-    'en' => ['en', 'School', 'Name', 'The username field is required.'],
+    'kk' => ['kk', 'Мектеп', 'Атауы', '«логин» өрісін толтырыңыз.', 'Толтыру нұсқаулығы', 'Міндетті'],
+    'ru' => ['ru', 'Школа', 'Название', 'Заполните поле «логин».', 'Инструкция по заполнению', 'Обязательное'],
+    'en' => ['en', 'School', 'Name', 'The username field is required.', 'Filling instructions', 'Required'],
 ]);
 
 test('all three interface dictionaries have identical unique keys', function () {

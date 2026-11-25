@@ -8,6 +8,7 @@ use App\Services\SpreadsheetImport;
 use App\Services\SpreadsheetImportReader;
 use App\UserRole;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
@@ -111,4 +112,24 @@ it('rejects formulas and limits import endpoints to administrators', function ()
     $this->get(route('admin.imports.template', 'schools'))->assertForbidden();
     $this->postJson(route('admin.imports.preview', 'schools'), ['file' => $file])->assertForbidden();
     $this->postJson(route('admin.imports.confirm', 'schools'), ['file' => $file])->assertForbidden();
+});
+
+it('rolls back the first row and audit event if the second insert fails', function () {
+    $file = ($this->workbook)('schools', [
+        ['Synthetic school A', '', '000000000981', '', '', '1'],
+        ['Synthetic school B', '', '000000000982', '', '', '1'],
+    ]);
+    $token = $this->postJson(route('admin.imports.preview', 'schools'), ['file' => $file])
+        ->assertOk()->assertJsonPath('valid', 2)->json('token');
+    DB::unprepared(
+        "CREATE TEMP TRIGGER reject_second_school BEFORE INSERT ON schools WHEN NEW.bin = '000000000982' BEGIN SELECT RAISE(ABORT, 'synthetic insert failure'); END",
+    );
+    try {
+        $this->postJson(route('admin.imports.confirm', 'schools'), ['file' => $file, 'token' => $token])
+            ->assertUnprocessable();
+        $this->assertDatabaseCount('schools', 0);
+        $this->assertDatabaseMissing('audit_events', ['action' => 'spreadsheet.import.schools']);
+    } finally {
+        DB::unprepared('DROP TRIGGER reject_second_school');
+    }
 });

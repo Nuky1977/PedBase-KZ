@@ -143,7 +143,7 @@ async function submit(save: boolean) {
                     {{ t('Педагог аккаунттарын тіркеу') }}
                 </option>
                 <option v-for="code in workloadTypes" :key="code" :value="code">
-                    {{ types[code] }} {{ t('· жүктеме') }}
+                    {{ t(types[code] ?? code) }} {{ t('· жүктеме') }}
                 </option>
             </select>
         </label>
@@ -168,7 +168,7 @@ async function submit(save: boolean) {
                 <a
                     :href="template.url(code, { query: { registration: 1 } })"
                     class="underline"
-                    >{{ name }} XLSX</a
+                    >{{ t(name) }} XLSX</a
                 >
             </li>
         </ul>
@@ -222,13 +222,13 @@ async function submit(save: boolean) {
             class="flex flex-wrap items-end gap-3"
             @submit.prevent="submit(false)"
         >
-            <label class="grid gap-1 text-sm">
+            <label class="grid max-w-full min-w-0 gap-1 text-sm">
                 {{ t('XLSX файлы') }}
                 <input
                     type="file"
                     accept=".xlsx"
                     :disabled="busy"
-                    class="rounded-md border p-2"
+                    class="min-w-0 rounded-md border p-2"
                     @change="select"
                 />
             </label>
@@ -251,7 +251,7 @@ async function submit(save: boolean) {
         <p
             v-if="error"
             role="alert"
-            class="text-sm whitespace-pre-line text-destructive"
+            class="text-sm wrap-anywhere whitespace-pre-line text-destructive"
         >
             {{ error }}
         </p>

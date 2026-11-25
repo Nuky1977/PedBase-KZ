@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SpreadsheetImportRequest;
 use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
+use App\Services\SpreadsheetLabels;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +21,7 @@ class SpreadsheetImportController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/Imports', [
-            'columns' => array_map('array_values', SpreadsheetImport::COLUMNS),
+            'columns' => array_map(fn (array $columns): array => array_values(SpreadsheetLabels::translate($columns)), SpreadsheetImport::COLUMNS),
         ]);
     }
 
