@@ -9,7 +9,6 @@ use App\Services\EducationOrganizationRegistration;
 use App\Services\EducationWorkloadImport;
 use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
-use App\Services\SpreadsheetLabels;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -108,12 +107,12 @@ class EducationOrganizationController extends Controller
         return to_route('education-organizations.show', $organization);
     }
 
-    public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads): BinaryFileResponse
+    public function employmentTemplate(Request $request, string $type, SpreadsheetExport $export, EducationOrganizationRegistration $registration, EducationWorkloadImport $workloads, SpreadsheetImport $import): BinaryFileResponse
     {
         abort_unless(config('pedbase.education_catalog_enabled'), 404);
         abort_unless($request->user()->isAdmin(), 403);
         if ($type === 'teacher-accounts') {
-            $path = $export->xlsx([array_values(SpreadsheetLabels::translate(SpreadsheetImport::CATALOG_TEACHER_COLUMNS))], [
+            $path = $import->template(SpreadsheetImport::CATALOG_TEACHERS, $export, [
                 [__('Файлға құпиясөз, ЖСН немесе жеке құжат деректерін қоспаңыз.')],
                 [__('Әр жұмыс орнын бөлек жолға жазыңыз. Логин, email және аты-жөн барлық жолда бірдей болуы керек.')],
                 [__('Негізгі жұмыс орны үшін primary, қосымша жұмыс орны үшін secondary қолданыңыз.')],
@@ -144,15 +143,15 @@ class EducationOrganizationController extends Controller
             ])->deleteFileAfterSend(true);
         }
         $additionalColumns = match ($type) {
-            'school' => ['Пән коды', 'Оқу жылы', 'Апталық жүктеме'],
-            'college' => ['Мамандық коды', 'Біліктілік коды', 'Кәсіптік модуль коды', 'Оқу жылы', 'Жүктеме', 'Өлшем бірлігі'],
-            'preschool' => ['Педагогикалық қызмет бағыты'],
-            'supplementary' => ['Үйірме немесе секция', 'Бағдарлама коды'],
-            'special' => ['Қызмет бағыты', 'Бағдарлама коды'],
+            'school' => ['subject_code' => 'Пән коды', 'year' => 'Оқу жылы', 'weekly_hours' => 'Апталық жүктеме'],
+            'college' => ['specialty_code' => 'Мамандық коды', 'qualification_code' => 'Біліктілік коды', 'module_code' => 'Кәсіптік модуль коды', 'year' => 'Оқу жылы', 'amount' => 'Жүктеме', 'unit' => 'Өлшем бірлігі'],
+            'preschool' => ['direction' => 'Педагогикалық қызмет бағыты'],
+            'supplementary' => ['club' => 'Үйірме немесе секция', 'program_code' => 'Бағдарлама коды'],
+            'special' => ['direction' => 'Қызмет бағыты', 'program_code' => 'Бағдарлама коды'],
             default => abort(404),
         };
-        $columns = ['Аты-жөні', 'Логин', 'Email', 'Ұйым БСН', 'Лауазымы', ...$additionalColumns];
-        $path = $export->xlsx([SpreadsheetLabels::translate($columns)], [
+        $columns = ['name' => 'Аты-жөні', 'username' => 'Логин', 'email' => 'Email', 'bin' => 'Ұйым БСН', 'position_title' => 'Лауазымы', ...$additionalColumns];
+        $path = $export->template($columns, [
             [__('Жобалық үлгі')],
             [__('Баған құрылымын келісуге арналған. Осы үлгі арқылы импорт кейін іске қосылады.')],
             [__('Нақты жеке деректерді енгізбеңіз.')],

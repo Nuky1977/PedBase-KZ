@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
 use App\Services\SpreadsheetImportReader;
 use App\Services\SpreadsheetLabels;
@@ -51,18 +50,24 @@ test('validation templates and spreadsheet downloads follow the selected languag
         $header = app(SpreadsheetImportReader::class)->read($sheet)[1];
         expect($header[0])->toBe($templateHeading);
         expect(SpreadsheetLabels::matchHeader(SpreadsheetImport::COLUMNS['schools'], $header))->not->toBeNull();
-    } finally {
-        unlink($sheet);
-    }
-
-    $input = app(SpreadsheetExport::class)->xlsx([
-        $header, ['Synthetic school', 'SS', '000000000991', 'school', 'Synthetic locality', 'Иә'],
-    ]);
-    try {
-        $preview = app(SpreadsheetImport::class)->inspect('schools', $input);
+        $zip = new ZipArchive;
+        expect($zip->open($sheet))->toBeTrue();
+        try {
+            expect($zip->getFromName('xl/tables/table1.xml'))->toContain('<autoFilter ref="A1:F2"/>');
+            expect($zip->getFromName('xl/workbook.xml'))->toContain(__('Толтыру нұсқаулығы', locale: $locale));
+            $part = 'xl/worksheets/sheet1.xml';
+            $cells = '';
+            foreach (array_combine(range('A', 'F'), ['Synthetic school', 'SS', '000000000991', 'school', 'Synthetic locality', 'Иә']) as $column => $value) {
+                $cells .= '<c r="'.$column.'2" t="inlineStr"><is><t>'.$value.'</t></is></c>';
+            }
+            $zip->addFromString($part, preg_replace('/<row r="2"[^>]*>.*?<\/row>/s', '<row r="2">'.$cells.'</row>', $zip->getFromName($part)));
+        } finally {
+            $zip->close();
+        }
+        $preview = app(SpreadsheetImport::class)->inspect('schools', $sheet);
         expect($preview['errors'])->toBe([])->and($preview['data'][2]['name'])->toBe('Synthetic school');
     } finally {
-        unlink($input);
+        unlink($sheet);
     }
 
     $csv = $this->get(route('reports.export', 'csv'))->assertOk()->streamedContent();

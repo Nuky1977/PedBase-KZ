@@ -35,9 +35,8 @@ class EducationReportController extends Controller
     public function export(EducationReportRequest $request, string $format, EducationReports $reports, SpreadsheetExport $spreadsheet): BinaryFileResponse|StreamedResponse
     {
         [$report, , , $labels, $query] = $this->report($request, $reports);
-        $rows = $this->rows($query, $labels[$report]['columns']);
 
-        return $this->download($format, "pedbase-{$report}.{$format}", $rows, $spreadsheet);
+        return $this->download($format, "pedbase-{$report}.{$format}", $query, $labels[$report]['columns'], $spreadsheet);
     }
 
     public function catalog(Request $request, EducationCatalogReports $reports): Response
@@ -67,7 +66,7 @@ class EducationReportController extends Controller
             'achievements' => ['organization', 'type', 'region', 'area', 'teacher', 'archived_at', 'award_title', 'issuer', 'achievement_on', 'level'],
         }));
 
-        return $this->download($format, "pedbase-catalog-{$filters['report']}.{$format}", $this->rows($query, SpreadsheetLabels::translate($columns)), $spreadsheet);
+        return $this->download($format, "pedbase-catalog-{$filters['report']}.{$format}", $query, SpreadsheetLabels::translate($columns), $spreadsheet);
     }
 
     private function catalogFilters(Request $request): array
@@ -96,10 +95,11 @@ class EducationReportController extends Controller
         return $filters;
     }
 
-    private function download(string $format, string $filename, Generator $rows, SpreadsheetExport $spreadsheet): BinaryFileResponse|StreamedResponse
+    private function download(string $format, string $filename, Builder $query, array $columns, SpreadsheetExport $spreadsheet): BinaryFileResponse|StreamedResponse
     {
+        $rows = $this->rows($query, $columns);
         if ($format === 'xlsx') {
-            return response()->download($spreadsheet->xlsx($rows), $filename, [
+            return response()->download($spreadsheet->xlsx($rows, keys: array_keys($columns)), $filename, [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'Cache-Control' => 'private, no-store',
             ])->deleteFileAfterSend(true);

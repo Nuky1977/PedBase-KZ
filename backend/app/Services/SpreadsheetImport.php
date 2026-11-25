@@ -33,6 +33,19 @@ class SpreadsheetImport
 
     public function __construct(private SpreadsheetImportReader $reader) {}
 
+    public function template(string $kind, SpreadsheetExport $export, array $instructions): string
+    {
+        $columns = $kind === self::CATALOG_TEACHERS ? self::CATALOG_TEACHER_COLUMNS : self::COLUMNS[$kind];
+        $required = array_keys(array_filter($this->rules($kind), fn (array $rules): bool => in_array('required', $rules, true)));
+        $choices = match ($kind) {
+            'schools' => ['is_active' => ['Иә', 'Жоқ']],
+            self::CATALOG_TEACHERS => ['type' => array_keys(EducationOrganizationRegistration::TYPES), 'placement' => ['primary', 'secondary']],
+            default => [],
+        };
+
+        return $export->template($columns, $instructions, $required, $choices);
+    }
+
     public function inspect(string $kind, string $path, bool $lock = false): array
     {
         $data = $this->reader->read($path);

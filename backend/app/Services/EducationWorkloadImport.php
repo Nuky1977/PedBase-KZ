@@ -40,13 +40,24 @@ class EducationWorkloadImport
 
     public function template(string $type, SpreadsheetExport $export): string
     {
-        return $export->xlsx([array_values(SpreadsheetLabels::translate($this->columns($type)))], [
+        $columns = $this->columns($type);
+
+        return $export->template($columns, [
             [__('Ұйым түрі: :type', ['type' => $type])],
             [__('Тіркелген педагог логинін пайдаланыңыз. Жұмыс орны: primary немесе secondary.')],
             [__('Өлшем: academic_hour, clock_hour немесе fte. Кезең: week немесе academic_year.')],
             [__('Қосымша білім беру жүктемесі үшін week қолданыңыз.')],
             [__('БСН мен аумақ кодын мәтін түрінде енгізіңіз. 100 жолға дейін.')],
             [__('Мамандық және біліктілік кодтарын бекітілген дереккөзден алыңыз. Құпия ақпаратты енгізбеңіз.')],
+            ...match ($type) {
+                'college' => [[__('Кәсіптік модуль немесе жалпы білім беретін пән өрісінің кемінде бірін толтырыңыз.')]],
+                'supplementary' => [[__('Үйірме немесе секция өрісінің кемінде бірін толтырыңыз.')]],
+                default => [],
+            },
+        ], array_diff(array_keys($columns), ['module', 'subject', 'club', 'section']), [
+            'placement' => ['primary', 'secondary'],
+            'unit' => ['academic_hour', 'clock_hour', 'fte'],
+            'period' => $type === 'supplementary' ? ['week'] : ['week', 'academic_year'],
         ]);
     }
 

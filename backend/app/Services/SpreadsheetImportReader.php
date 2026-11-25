@@ -86,6 +86,10 @@ class SpreadsheetImportReader
                 && $this->xml($zip, $entry['name'])->query('//*[local-name()="f"]')->length > 0) {
                 $this->invalid('Формулаларға рұқсат жоқ. Ұяшықтарға тек мәндерді қойыңыз.');
             }
+            if (preg_match('~^xl/tables/[^/]+\.xml$~', $name)
+                && $this->xml($zip, $entry['name'])->query('//*[local-name()="calculatedColumnFormula" or local-name()="totalsRowFormula"]')->length > 0) {
+                $this->invalid('Формулаларға рұқсат жоқ. Ұяшықтарға тек мәндерді қойыңыз.');
+            }
         }
         $types = $this->xml($zip, '[Content_Types].xml');
         if ($types->query('//*[@PartName="/xl/workbook.xml" and @ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"]')->length !== 1) {

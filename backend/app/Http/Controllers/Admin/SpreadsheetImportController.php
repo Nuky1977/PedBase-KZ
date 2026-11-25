@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SpreadsheetImportRequest;
 use App\Services\SpreadsheetExport;
 use App\Services\SpreadsheetImport;
-use App\Services\SpreadsheetLabels;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -25,12 +24,8 @@ class SpreadsheetImportController extends Controller
         ]);
     }
 
-    public function template(string $kind, SpreadsheetExport $export): BinaryFileResponse
+    public function template(string $kind, SpreadsheetExport $export, SpreadsheetImport $import): BinaryFileResponse
     {
-        $columns = array_values(SpreadsheetLabels::translate(SpreadsheetImport::COLUMNS[$kind]));
-        $example = $kind === 'schools'
-            ? ['Үлгі мектебі', 'ҮМ', '000000000001', 'Мектеп', 'Үлгі елді мекені', 'Иә']
-            : ['Үлгі Педагог', 'ulgi_pedagog', 'teacher@example.invalid', '000000000001', 'MAT', 'Мұғалім', '1,50', 2026];
         $instructions = [
             [__('Нұсқаулық')],
             [__('Бірінші парақты толтырыңыз. Бірінші жолдағы баған атауларын сақтаңыз.')],
@@ -44,10 +39,8 @@ class SpreadsheetImportController extends Controller
                 [__('Әр пәнді бөлек жолға жазыңыз. Бір педагогтің логині, аты-жөні және email-ы бірдей болсын.')],
                 [__('Педагогтің бірінші мектебі негізгі жұмыс орны болады. 2026 — 2026–2027 оқу жылы.')],
             ]),
-            $columns,
-            $example,
         ];
-        $path = $export->xlsx([$columns], $instructions);
+        $path = $import->template($kind, $export, $instructions);
 
         return response()->download($path, "pedbase-{$kind}-template.xlsx", [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

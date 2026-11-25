@@ -44,13 +44,16 @@ class EducationOrganizationRegistration
 
     public function template(string $type, SpreadsheetExport $export): string
     {
-        return $export->xlsx([array_values(SpreadsheetLabels::translate(self::COLUMNS))], [
+        return $export->template(self::COLUMNS, [
             [__('Ұйымдарды тіркеу')],
             [__('Ұйым түрінің коды: :code', ['code' => $type])],
             [__('БСН-ді және ресми аумақ кодтарын Excel-де мәтін ретінде енгізіңіз. БСН 12 цифрдан тұрады.')],
             [__('Мәртебе: active, inactive немесе archived. Қысқаша атау міндетті емес.')],
             [__('100 жолға дейін. Белгісіз аумақты әкімші анықтамалық бойынша қолмен сәйкестендіреді.')],
             [__('Құпиясөздер мен жеке деректерді қоспаңыз.')],
+        ], array_diff(array_keys(self::COLUMNS), ['short_name']), [
+            'type_code' => array_values(array_unique([$type, ...array_keys(self::TYPES)])),
+            'status' => ['active', 'inactive', 'archived'],
         ]);
     }
 
