@@ -107,7 +107,7 @@ const fields = computed<
         key: 'type',
         label: t('Ұйым түрі'),
         all: t('Барлық түрі'),
-        items: props.types,
+        items: props.types.map((item) => ({ ...item, name: t(item.name) })),
     },
     {
         key: 'region',
@@ -384,7 +384,7 @@ function filter(reset = false) {
                         <p
                             class="mt-1 w-fit max-w-full rounded-md bg-muted px-2 py-1 text-xs font-medium wrap-anywhere text-foreground"
                         >
-                            {{ organization.type_name }}
+                            {{ t(organization.type_name) }}
                         </p>
                     </div>
                     <p

@@ -74,7 +74,7 @@ function saveStatus() {
                 <dt class="text-sm text-muted-foreground">
                     {{ t('Ұйым түрі') }}
                 </dt>
-                <dd>{{ organization.type_name }}</dd>
+                <dd>{{ t(organization.type_name) }}</dd>
             </div>
             <div>
                 <dt class="text-sm text-muted-foreground">
