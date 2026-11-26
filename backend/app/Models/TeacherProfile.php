@@ -44,11 +44,18 @@ class TeacherProfile extends Model
                 : $legacy,
             set: static function (#[\SensitiveParameter] ?string $value): array {
                 $protection = app(ProtectedIin::class);
+                if ($value !== null) {
+                    return ['iin' => null, ...$protection->protect($value)];
+                }
+
+                if (config('identity.key_store') !== 'environment') {
+                    $protection->ensureWritable();
+                }
 
                 return [
                     'iin' => null,
-                    'iin_ciphertext' => $value === null ? null : $protection->encrypt($value),
-                    'iin_lookup' => $value === null ? null : $protection->fingerprint($value),
+                    'iin_ciphertext' => null,
+                    'iin_lookup' => null,
                 ];
             },
         );

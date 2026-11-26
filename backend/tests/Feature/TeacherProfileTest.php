@@ -4,6 +4,7 @@ use App\Models\TeacherProfile;
 use App\Models\User;
 use App\UserRole;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     config([
@@ -11,6 +12,38 @@ beforeEach(function () {
         'identity.lookup_key' => base64_encode(random_bytes(32)),
         'identity.previous_encryption_keys' => [],
     ]);
+});
+
+test('Vault supplies separate IIN keys and unavailable Vault prevents writes and clearing', function () {
+    $tokenFile = tempnam(sys_get_temp_dir(), 'pedbase-vault-');
+    file_put_contents($tokenFile, 'synthetic-token');
+    try {
+        config([
+            'identity.key_store' => 'vault',
+            'identity.vault.address' => 'https://vault.example.test',
+            'identity.vault.token_file' => $tokenFile,
+        ]);
+        Http::preventStrayRequests();
+        $aesUrl = 'https://vault.example.test/v1/secret/data/pedbase/iin-aes';
+        $hmacUrl = 'https://vault.example.test/v1/secret/data/pedbase/iin-hmac';
+        Http::fake([
+            $aesUrl => Http::sequence()->push(['data' => ['data' => ['current' => base64_encode(random_bytes(32))]]], 200)
+                ->pushStatus(503)->pushStatus(503),
+            $hmacUrl => Http::response(['data' => ['data' => ['current' => base64_encode(random_bytes(32))]]]),
+        ]);
+        $teacher = User::factory()->create(['role' => UserRole::TEACHER]);
+        $url = route('teacher.profile.update');
+        $this->actingAs($teacher)->put($url, ['iin' => '000000000009'])->assertRedirect(route('teacher.profile.edit'))->assertSessionHasNoErrors();
+        $before = DB::table('teacher_profiles')->first();
+        expect($before->iin)->toBeNull()->and($before->iin_ciphertext)->not->toBeNull()->and($before->iin_lookup)->toHaveLength(64);
+
+        $this->putJson($url, ['iin' => '000000000008'])->assertServiceUnavailable();
+        $this->putJson($url, ['iin' => null])->assertServiceUnavailable();
+        expect((array) DB::table('teacher_profiles')->first())->toEqual((array) $before);
+        Http::assertSent(fn ($request) => $request->url() === $hmacUrl && $request->hasHeader('X-Vault-Token', 'synthetic-token'));
+    } finally {
+        unlink($tokenFile);
+    }
 });
 
 test('teacher can have one teacher profile', function () {

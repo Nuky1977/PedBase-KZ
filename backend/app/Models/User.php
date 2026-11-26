@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use App\UserRole;
-use Database\Factories\UserFactory;
+use Composer\InstalledVersions;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -79,10 +80,22 @@ class User extends Authenticatable
         return $this->hasMany(TeacherAchievement::class);
     }
 
-    public function catalogPasswordDeliveryEnabled(): bool
+    public static function catalogPasswordDeliveryEnabled(): bool
     {
         $mailer = config('mail.default');
         $transport = config('mail.mailers.'.$mailer.'.transport');
+
+        if ($mailer === 'postmark-smtp') {
+            $version = InstalledVersions::getVersion('symfony/mailer');
+            // CVE-2026-133751 affects STARTTLS enforcement on older Mailer releases.
+            $patched = $version !== null && (
+                version_compare($version, '8.1.12', '>=')
+                || (version_compare($version, '7.4.24', '>=') && version_compare($version, '8.0.0', '<'))
+            );
+
+            return $patched && filled(config('mail.mailers.postmark-smtp.username'))
+                && filled(config('mail.mailers.postmark-smtp.password'));
+        }
 
         return in_array($transport, ['smtp', 'sendmail', 'ses', 'ses-v2', 'postmark', 'resend', 'mailgun'], true)
             || ($transport === 'array' && app()->environment('testing'));
@@ -90,7 +103,7 @@ class User extends Authenticatable
 
     public function sendPasswordResetNotification($token): void
     {
-        if ($this->catalogPasswordDeliveryEnabled()) {
+        if (self::catalogPasswordDeliveryEnabled()) {
             $this->notify(new ResetPassword($token));
         }
     }

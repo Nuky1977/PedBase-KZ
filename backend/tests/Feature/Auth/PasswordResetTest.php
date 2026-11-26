@@ -2,8 +2,11 @@
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Events\NotificationSending;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::resetPasswords());
@@ -30,10 +33,62 @@ test('the log mailer never receives a password reset notification for an existin
     config(['mail.default' => 'log']);
     $user = User::factory()->create(['catalog_onboarding_pending' => false]);
 
-    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasErrors('email');
 
     Notification::assertNothingSent();
+    $this->assertDatabaseCount('password_reset_tokens', 0);
 });
+
+test('unconfigured Postmark rejects reset requests before looking up an account', function () {
+    Notification::fake();
+    config([
+        'mail.default' => 'postmark-smtp',
+        'mail.mailers.postmark-smtp.username' => 'synthetic-id',
+        'mail.mailers.postmark-smtp.password' => null,
+    ]);
+
+    $user = User::factory()->create();
+    foreach ([$user->email, 'missing@example.test'] as $email) {
+        $this->postJson(route('password.email'), ['email' => $email])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.email.0', __('passwords.delivery_unavailable'));
+    }
+
+    Notification::assertNothingSent();
+    $this->assertDatabaseCount('password_reset_tokens', 0);
+});
+
+test('transport errors return a localized message without exposing SMTP details', function () {
+    Event::listen(NotificationSending::class, function (): never {
+        throw new TransportException('synthetic provider detail');
+    });
+    $user = User::factory()->create();
+
+    $this->postJson(route('password.email'), ['email' => $user->email])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.email.0', __('passwords.delivery_unavailable'))
+        ->assertDontSee('synthetic provider detail');
+});
+
+test('password setup mail renders in the request language and uses the configured HTTPS origin', function (string $locale, string $subject, string $action) {
+    Notification::fake();
+    config(['app.url' => 'https://staging.example.test']);
+    $user = User::factory()->create(['catalog_onboarding_pending' => true]);
+
+    $this->withCookie('pedbase_locale', $locale)->post(route('password.email'), ['email' => $user->email])
+        ->assertSessionHasNoErrors();
+
+    $notification = Notification::sent($user, ResetPassword::class)->sole();
+    $message = $notification->toMail($user);
+    expect($message->subject)->toBe($subject)
+        ->and($message->actionText)->toBe($action)
+        ->and($message->actionUrl)->toStartWith('https://staging.example.test/reset-password/')
+        ->and((string) $message->render())->toContain($action);
+})->with([
+    ['kk', 'Құпиясөзді орнату немесе қалпына келтіру', 'Құпиясөз орнату'],
+    ['ru', 'Установка или сброс пароля', 'Установить пароль'],
+    ['en', 'Set or reset your password', 'Set password'],
+]);
 
 test('reset password screen can be rendered', function () {
     Notification::fake();

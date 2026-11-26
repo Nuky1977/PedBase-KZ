@@ -36,6 +36,16 @@ return [
     */
 
     'mailers' => [
+        'postmark-smtp' => [
+            'transport' => 'smtp',
+            'scheme' => 'smtp',
+            'host' => 'smtp.postmarkapp.com',
+            'port' => 587,
+            'username' => env('POSTMARK_SMTP_ACCESS_KEY'),
+            'password' => env('POSTMARK_SMTP_SECRET_KEY'),
+            'require_tls' => true,
+            'timeout' => 10,
+        ],
 
         'smtp' => [
             'transport' => 'smtp',

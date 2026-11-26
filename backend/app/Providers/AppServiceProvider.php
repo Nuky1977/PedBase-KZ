@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\EnvironmentIinKeyStore;
+use App\Services\IinKeyStore;
+use App\Services\VaultIinKeyStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +18,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(IinKeyStore::class, fn (): IinKeyStore => match (config('identity.key_store')) {
+            'environment' => new EnvironmentIinKeyStore,
+            'vault' => new VaultIinKeyStore,
+            default => abort(503, __('identity.unavailable')),
+        });
     }
 
     /**

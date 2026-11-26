@@ -379,7 +379,7 @@ it('registers catalog teacher accounts only after admin confirmation and allows 
     auth()->guard()->logout();
     Notification::fake();
     config(['mail.default' => 'log']);
-    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasErrors('email');
     Notification::assertNothingSent();
     expect((bool) $user->fresh()->catalog_onboarding_pending)->toBeTrue();
     $this->travel(61)->seconds();

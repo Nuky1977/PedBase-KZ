@@ -126,16 +126,14 @@ class ProfileController extends Controller
             ],
         ]);
 
-        if (array_key_exists('iin', $validated)) {
-            if (TeacherProfile::query()->whereNotNull('iin')->exists()) {
-                throw ValidationException::withMessages(['iin' => __('ЖСН көшіру аяқталғанша бұл өрісті өзгерту қолжетімсіз.')]);
-            }
-            $lookup = $validated['iin'] === null ? null : $protection->fingerprint($validated['iin']);
+        if (array_key_exists('iin', $validated) && TeacherProfile::query()->whereNotNull('iin')->exists()) {
+            throw ValidationException::withMessages(['iin' => __('ЖСН көшіру аяқталғанша бұл өрісті өзгерту қолжетімсіз.')]);
         }
 
         try {
             $user->teacherProfile()->updateOrCreate([], $validated);
         } catch (UniqueConstraintViolationException $exception) {
+            $lookup = isset($validated['iin']) ? $protection->fingerprint($validated['iin']) : null;
             if (isset($lookup) && TeacherProfile::query()->where('iin_lookup', $lookup)->where('user_id', '<>', $user->id)->exists()) {
                 throw ValidationException::withMessages(['iin' => __('Бұл ЖСН бұрын тіркелген.')]);
             }
