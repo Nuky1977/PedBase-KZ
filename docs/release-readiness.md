@@ -470,3 +470,53 @@ OpenSSL 3 және RSA қалпына келтіру сертификатын қ
 Енгізу алдында SQL/PDF архивін тексеріп, қалпына келтіру кілтінің қолжетімділігін растаңыз. Рұқсаты бөлек staging қосылымында `migrate:status` пен `migrate --pretend` нәтижесін салыстырып, үш DDL жоспары мен 21 миграция/32 кесте нәтижесін тексеріңіз. Сәтсіздік болса, 1061–1080 кезеңінде тексерілген миграция алдындағы SQL/PDF және сәйкес кілт нұсқаларына қайтыңыз. Негізгі MySQL-де миграция орындалған жоқ, каталог өшірулі.
 
 **Қорытынды тексерулер.** MySQL драйверлері ажыратылған SQLite `:memory:` ортасында толық Pest жинағы өтті. 137 сынақ өтті, 4 өткізіп жіберілді, 1619 тексеру орындалды. TypeScript, ESLint, Vite build, өзгерген PHP файлдарының Pint тексерісі және Git diff тексерісі өтті. Толық және өндірістік npm аудиттерінде 0 осалдық анықталды. Composer аудитінің 7 ескертуі жоғарыда тіркелді. Негізгі `.env` файлының SHA-256 мәні сәйкес келді және PR №2 Draft күйі расталды.
+
+### 2026-11-26 · 1101–1120-қадамдар
+
+**Бекітуге ұсыныс.** Symfony 7.4.24 жаңартуын тексерілген `backend/composer.lock` diff ретінде қабылдау. Жаңарту `f310584` негізіндегі бөлек `PedBase-KZ-composer-1120` worktree-де сыналды. Негізгі `feature/education-imports` тармағындағы тәуелділіктерді өзгертуге `backend/AGENTS.md` бойынша бөлек бекіту қажет.
+
+#### Бастапқы Composer аудиті
+
+Негізгі lock-файлда 4 пакетке қатысты 7 ескерту бар. `composer audit --locked` деңгейлерді бос берді. Кестедегі CVSS 4.0 ұпайлары мен деңгейлері Symfony CNA деректерінен алынды. Ауқымның төменгі шегі кіреді, `<` таңбасынан кейінгі жоғарғы шек кірмейді.
+
+| Пакет және мәселе | CVE / GHSA | CVSS 4.0 | Әсер ететін нұсқалар |
+| --- | --- | --- | --- |
+| `symfony/http-kernel` · ішкі фрагменттердегі сенімсіз прокси тақырыптары абсолют URL-ге әсер етеді | [CVE-2026-133743 / GHSA-8cww-v5fg-2mf9](https://github.com/symfony/symfony/security/advisories/GHSA-8cww-v5fg-2mf9) | **7.0 · жоғары** | `<5.4.57`, `6.0.0–<6.4.51`, `7.0.0–<7.4.24`, `8.0.0–<8.1.12` |
+| `symfony/mailer` · міндетті TLS орындалмай қалуы мүмкін | [CVE-2026-133751 / GHSA-rxvg-83cq-mxm7](https://github.com/symfony/symfony/security/advisories/GHSA-rxvg-83cq-mxm7) | **6.3 · орташа** | `7.3.0–<7.4.24`, `8.0.0–<8.1.12` |
+| `symfony/mailer` · STARTTLS шекарасындағы жауап тұтастығы бұзылады | [CVE-2026-133755 / GHSA-c6x5-258c-g3f5](https://github.com/symfony/symfony/security/advisories/GHSA-c6x5-258c-g3f5) | **6.3 · орташа** | `7.3.0–<7.4.24`, `8.0.0–<8.1.12` |
+| `symfony/routing` · URL генерациясы басқа хостқа бағытталуы мүмкін | [CVE-2026-133746 / GHSA-cpx6-mpfq-c6cr](https://github.com/symfony/symfony/security/advisories/GHSA-cpx6-mpfq-c6cr) | **5.3 · орташа** | `<5.4.57`, `6.0.0–<6.4.51`, `7.0.0–<7.4.24`, `8.0.0–<8.1.12` |
+| `symfony/routing` · хост параметрлері генерацияланған URL хостына әсер етеді | [CVE-2026-133754 / GHSA-wgv4-frv7-c8c5](https://github.com/symfony/symfony/security/advisories/GHSA-wgv4-frv7-c8c5) | **5.3 · орташа** | `<5.4.57`, `6.0.0–<6.4.51`, `7.0.0–<7.4.24`, `8.0.0–<8.1.12` |
+| `symfony/serializer` · CSV декодтау шамадан тыс ресурс тұтынуы мүмкін | [CVE-2026-133761 / GHSA-4xg9-mw5c-qq5p](https://github.com/symfony/symfony/security/advisories/GHSA-4xg9-mw5c-qq5p) | **8.7 · жоғары** | `<5.4.57`, `6.0.0–<6.4.51`, `7.0.0–<7.4.24`, `8.0.0–<8.1.12` |
+| `symfony/serializer` · дискриминатор немесе қолдағы нысан үшін `Ignore` ережесі сақталмауы мүмкін | [CVE-2026-133752 / GHSA-qv8q-hf5w-5gjf](https://github.com/symfony/symfony/security/advisories/GHSA-qv8q-hf5w-5gjf) | **6.3 · орташа** | `5.1.0–<5.4.57`, `6.0.0–<6.4.51`, `7.0.0–<7.4.24`, `8.0.0–<8.1.12` |
+
+Барлық жеті ескерту үшін 7.4.24 және 8.1.12 нұсқаларында түзету бар. Ескі тармақтарға қатысты бес ескертуге 5.4.57 және 6.4.51 түзетулері де жарияланған. 8.1 тармағы PHP 8.4+ талап етеді, ал 7.4 тармағы PHP 8.2+ қолдайды. [Symfony 7.4.24](https://symfony.com/blog/symfony-7-4-24-released) · [Symfony 7.4 талаптары](https://symfony.com/releases/7.4) · [Symfony 8.1 талаптары](https://symfony.com/releases/8.1)
+
+**STARTTLS PedBase-KZ үшін енгізу қақпасы болып қалады.** Postmark арнасы TCP/587 арқылы `require_tls=true` қолданады. Екі Mailer ескертуі TLS талабы мен SMTP жауаптарының тұтастығына әсер етеді. Құпиясөз хаты бір реттік сілтемені тасымалдайтындықтан, негізгі тармақтағы 7.4.15 нұсқасымен арнаны ашу бұғатталған. Сынақтағы 7.4.24 нұсқасында қолданба синтетикалық конфигурацияны қабылдады. Laravel mailer сертификаты тексерілген жергілікті Mailpit серверіне бір синтетикалық хат тапсырды. STARTTLS ұсынбаған екінші серверге ешбір хат түспеді. Сынақта сыртқы relay, нақты SMTP тіркелгісі немесе қалпына келтіру токені қолданылмады.
+
+#### Тексерілген lock-файл өзгерісі
+
+| Пакет | Негізгі lock | Сынақ lock |
+| --- | --- | --- |
+| `symfony/http-foundation` | 7.4.23 | 7.4.24 |
+| `symfony/http-kernel` | 7.4.23 | 7.4.24 |
+| `symfony/mailer` | 7.4.15 | 7.4.24 |
+| `symfony/routing` | 7.4.23 | 7.4.24 |
+| `symfony/serializer` | 7.4.23 | 7.4.24 |
+
+Laravel 13.43.0 `http-kernel`, `mailer` және `routing` үшін `^7.4.0 || ^8.0.0` қабылдайды. `web-auth/webauthn-lib` Serializer 7.x нұсқасын қабылдайды. HttpKernel 7.4.24 үшін HttpFoundation `^7.4.24 || ^8.1.12` керек, сондықтан ол бесінші пакет ретінде өзгерді. `composer check-platform-reqs --lock` PHP 8.3.33 ортасында өтті. Worktree-де жалғыз бақыланатын өзгеріс — `backend/composer.lock`. `composer.json`, оның `content-hash` мәні, Laravel нұсқасы және npm lock-файлы сол күйінде. Сынақ lock-файлының SHA-256 мәні — `d65faba5b2ac5c6feea22016237da00e7ee9675d950b5fad09a88b9306b622e4`.
+
+```powershell
+composer update symfony/http-kernel:7.4.24 symfony/mailer:7.4.24 symfony/routing:7.4.24 symfony/serializer:7.4.24 --with-all-dependencies --minimal-changes --no-scripts --no-interaction
+php artisan package:discover --no-interaction
+composer validate --no-interaction
+composer check-platform-reqs --lock --no-interaction
+composer audit --locked --no-interaction
+```
+
+Алғашқы жаңарту lock-файл мен пакеттерді орнатқаннан кейін, жобаның `boost:update` қадамында тоқтады. Оқшауланған ортада Boost пәрмені тіркелмеген. Қайта жүргізуде `--no-scripts` қолданылып, Laravel package discovery бөлек орындалды. Бекіткенде сол тексерілген lock-файлды қолданыңыз және таза Composer орнатылымынан кейін аудитті қайталаңыз.
+
+**Регрессия тәуекелдері.** SMTP relay сертификаты мен STARTTLS үйлесімділігі, reverse proxy артындағы URL және маршрут генерациясы, passkey деректерін сериализациялау және CSV өңдеу. Автоматты регрессия негізгі маршруттар мен функцияларды қамтиды. Өндірістік proxy, бекітілген Postmark тіркелгісі және нақты жәшік арқылы қабылдау сынағы ашық.
+
+**Сынақ қорытындысы.** `composer validate`, `composer check-platform-reqs --lock` және `composer audit --locked` өтті. Бастапқы жеті Composer ескертуінің ешқайсысы сынақ lock-файлында қалған жоқ. MySQL драйверлері ажыратылған SQLite `:memory:` ортасында толық Pest жинағында 137 сынақ өтті, 4 өткізіп жіберілді, 1619 тексеру орындалды. Vite build, TypeScript және ESLint өтті. Алғашқы Vite әрекеті Composer package discovery аяқталмай басталып тоқтады. Тәуелділіктер дайын болғаннан кейін құрастыру сәтті аяқталды. Сынақ нәтижелері тек оқшауланған worktree-ге қатысты.
+
+**Қолдану шарты.** Негізгі тармақтағы `composer.lock` пен `composer.json` бастапқы күйінде тексерілді. Сынақ lock-файлы `C:/laragon/www/PedBase-KZ-composer-1120/backend/composer.lock` жолында бекіту үшін сақталды. Негізгі `.env` хэші сәйкес келді. MySQL-ге миграция, seeder немесе жазу орындалған жоқ, каталог қосылған жоқ. Push және merge жасалмады.
