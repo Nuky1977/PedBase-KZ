@@ -31,6 +31,6 @@ class SaveOrganizationAccessRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['required' => 'Мән енгізіңіз.', 'exists' => 'Жазба немесе пайдаланушы рөлі жарамсыз.', 'unique' => 'Бұл атау тіркелген.', 'max' => 'Мән берілген шектен ұзын.'];
+        return ['required' => __('Мән енгізіңіз.'), 'exists' => __('Жазба немесе пайдаланушы рөлі жарамсыз.'), 'unique' => __('Бұл атау тіркелген.'), 'max' => __('Мән берілген шектен ұзын.')];
     }
 }

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/composables/useTranslation';
 import {
     archive,
     save,
@@ -16,6 +17,8 @@ import {
 import { destroy, store, update } from '@/routes/admin/employment/assignments';
 import { store as storeSubject } from '@/routes/admin/employment/subjects';
 import type { TeacherEmployment, TeachingAssignment } from '@/types/employment';
+
+const { t } = useTranslation();
 
 const props = defineProps<{
     school: { id: number; name: string };
@@ -62,7 +65,7 @@ function saveAssignment() {
 }
 
 function removeAssignment(assignment: TeachingAssignment) {
-    if (window.confirm('Осы пәннің жүктемесін алып тастайсыз ба?')) {
+    if (window.confirm(t('Осы пәннің жүктемесін алып тастайсыз ба?'))) {
         router.visit(
             destroy({ ...routeParams.value, assignment: assignment.id }),
             {
@@ -80,7 +83,9 @@ function removeAssignment(assignment: TeachingAssignment) {
 function archiveEmployment() {
     if (
         window.confirm(
-            'Еңбек жазбасы мұрағатталады. Мектепке бекіту сақталады. Жалғастырасыз ба?',
+            t(
+                'Еңбек жазбасы мұрағатталады. Мектепке бекіту сақталады. Жалғастырасыз ба?',
+            ),
         )
     ) {
         router.visit(archive(routeParams.value), {
@@ -93,7 +98,7 @@ function archiveEmployment() {
 
 <template>
     <div class="mx-auto w-full max-w-5xl space-y-5 px-4 py-6 sm:px-8">
-        <Head title="Педагогтің еңбек деректері" />
+        <Head :title="t('Педагогтің еңбек деректері')" />
         <header class="flex flex-wrap items-start justify-between gap-3">
             <div class="space-y-2">
                 <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -102,19 +107,23 @@ function archiveEmployment() {
                 <p class="text-muted-foreground">{{ school.name }}</p>
                 <Badge :variant="isPrimary ? 'default' : 'secondary'">
                     {{
-                        isPrimary ? 'Негізгі жұмыс орны' : 'Қосымша жұмыс орны'
+                        isPrimary
+                            ? t('Негізгі жұмыс орны')
+                            : t('Қосымша жұмыс орны')
                     }}
                 </Badge>
             </div>
             <Button variant="outline" as-child>
-                <Link :href="schoolIndex(school.id)"
-                    >Мектептің еңбек деректері</Link
-                >
+                <Link :href="schoolIndex(school.id)">{{
+                    t('Мектептің еңбек деректері')
+                }}</Link>
             </Button>
         </header>
 
         <Card>
-            <CardHeader><CardTitle>Еңбек деректері</CardTitle></CardHeader>
+            <CardHeader
+                ><CardTitle>{{ t('Еңбек деректері') }}</CardTitle></CardHeader
+            >
             <CardContent>
                 <Form
                     v-bind="save.form(routeParams)"
@@ -124,7 +133,9 @@ function archiveEmployment() {
                 >
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="position-title">Лауазымы</Label>
+                            <Label for="position-title">{{
+                                t('Лауазымы')
+                            }}</Label>
                             <Input
                                 id="position-title"
                                 name="position_title"
@@ -137,23 +148,29 @@ function archiveEmployment() {
                             <InputError :message="errors.position_title" />
                         </div>
                         <div class="space-y-2">
-                            <Label for="employment-status">Еңбек күйі</Label>
+                            <Label for="employment-status">{{
+                                t('Еңбек күйі')
+                            }}</Label>
                             <select
                                 id="employment-status"
                                 name="status"
                                 :value="employment?.status ?? 'active'"
                                 :class="selectClass"
                             >
-                                <option value="active">Жұмыс істейді</option>
-                                <option value="on_leave">Демалыста</option>
+                                <option value="active">
+                                    {{ t('Жұмыс істейді') }}
+                                </option>
+                                <option value="on_leave">
+                                    {{ t('Демалыста') }}
+                                </option>
                             </select>
                             <InputError :message="errors.status" />
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <Button :disabled="processing"
-                            >Еңбек деректерін сақтау</Button
-                        >
+                        <Button :disabled="processing">{{
+                            t('Еңбек деректерін сақтау')
+                        }}</Button>
                         <Button
                             v-if="employment"
                             type="button"
@@ -161,7 +178,7 @@ function archiveEmployment() {
                             :disabled="processing"
                             @click="archiveEmployment"
                         >
-                            Мұрағаттау
+                            {{ t('Мұрағаттау') }}
                         </Button>
                     </div>
                 </Form>
@@ -170,7 +187,9 @@ function archiveEmployment() {
 
         <Card>
             <CardHeader
-                ><CardTitle>Пәндер мен апталық жүктеме</CardTitle></CardHeader
+                ><CardTitle>{{
+                    t('Пәндер мен апталық жүктеме')
+                }}</CardTitle></CardHeader
             >
             <CardContent class="space-y-5">
                 <EmploymentWorkload :employment="employment">
@@ -181,21 +200,24 @@ function archiveEmployment() {
                                 variant="outline"
                                 size="sm"
                                 @click="selectAssignment(assignment)"
-                                >Өңдеу</Button
+                                >{{ t('Өңдеу') }}</Button
                             >
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 @click="removeAssignment(assignment)"
-                                >Алып тастау</Button
+                                >{{ t('Алып тастау') }}</Button
                             >
                         </div>
                     </template>
                 </EmploymentWorkload>
                 <p v-if="!employment" class="text-sm text-muted-foreground">
-                    Пән жүктемесін енгізу үшін алдымен еңбек деректерін
-                    сақтаңыз.
+                    {{
+                        t(
+                            'Пән жүктемесін енгізу үшін алдымен еңбек деректерін сақтаңыз.',
+                        )
+                    }}
                 </p>
                 <template v-else>
                     <form
@@ -206,13 +228,13 @@ function archiveEmployment() {
                         <h2 class="font-medium">
                             {{
                                 editing === null
-                                    ? 'Пән жүктемесін қосу'
-                                    : 'Пән жүктемесін өңдеу'
+                                    ? t('Пән жүктемесін қосу')
+                                    : t('Пән жүктемесін өңдеу')
                             }}
                         </h2>
                         <div class="grid gap-4 sm:grid-cols-3">
                             <div class="space-y-2">
-                                <Label for="subject">Пән</Label>
+                                <Label for="subject">{{ t('Пән') }}</Label>
                                 <select
                                     id="subject"
                                     v-model="assignmentForm.subject_id"
@@ -220,7 +242,7 @@ function archiveEmployment() {
                                     required
                                 >
                                     <option disabled value="">
-                                        Пәнді таңдаңыз
+                                        {{ t('Пәнді таңдаңыз') }}
                                     </option>
                                     <option
                                         v-for="subject in subjects"
@@ -237,9 +259,9 @@ function archiveEmployment() {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="academic-year"
-                                    >Оқу жылының басталуы</Label
-                                >
+                                <Label for="academic-year">{{
+                                    t('Оқу жылының басталуы')
+                                }}</Label>
                                 <Input
                                     id="academic-year"
                                     v-model.number="
@@ -257,7 +279,9 @@ function archiveEmployment() {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="weekly-hours">Апталық сағат</Label>
+                                <Label for="weekly-hours">{{
+                                    t('Апталық сағат')
+                                }}</Label>
                                 <Input
                                     id="weekly-hours"
                                     v-model="assignmentForm.weekly_hours"
@@ -274,14 +298,14 @@ function archiveEmployment() {
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <Button :disabled="assignmentForm.processing">{{
-                                editing === null ? 'Қосу' : 'Сақтау'
+                                editing === null ? t('Қосу') : t('Сақтау')
                             }}</Button>
                             <Button
                                 v-if="editing !== null"
                                 type="button"
                                 variant="outline"
                                 @click="selectAssignment()"
-                                >Бас тарту</Button
+                                >{{ t('Бас тарту') }}</Button
                             >
                         </div>
                     </form>
@@ -291,7 +315,7 @@ function archiveEmployment() {
                         class="rounded-lg border p-3"
                     >
                         <summary class="cursor-pointer text-sm font-medium">
-                            Анықтамалыққа пән қосу
+                            {{ t('Анықтамалыққа пән қосу') }}
                         </summary>
                         <Form
                             v-bind="storeSubject.form(routeParams)"
@@ -302,7 +326,9 @@ function archiveEmployment() {
                         >
                             <div class="grid gap-3 sm:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="subject-code">Пән коды</Label>
+                                    <Label for="subject-code">{{
+                                        t('Пән коды')
+                                    }}</Label>
                                     <Input
                                         id="subject-code"
                                         name="code"
@@ -312,9 +338,9 @@ function archiveEmployment() {
                                     <InputError :message="errors.code" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="subject-name"
-                                        >Қазақша атауы</Label
-                                    >
+                                    <Label for="subject-name">{{
+                                        t('Қазақша атауы')
+                                    }}</Label>
                                     <Input
                                         id="subject-name"
                                         name="name_kk"
@@ -324,9 +350,9 @@ function archiveEmployment() {
                                     <InputError :message="errors.name_kk" />
                                 </div>
                             </div>
-                            <Button variant="outline" :disabled="processing"
-                                >Пәнді сақтау</Button
-                            >
+                            <Button variant="outline" :disabled="processing">{{
+                                t('Пәнді сақтау')
+                            }}</Button>
                         </Form>
                     </details>
                 </template>

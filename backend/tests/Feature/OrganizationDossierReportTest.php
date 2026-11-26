@@ -88,6 +88,40 @@ test('dossiers support multiple diplomas, attestation history, private certifica
     $this->assertDatabaseHas('audit_events', ['action' => 'dossier.remove', 'subject_id' => $saved->id]);
 });
 
+test('achievements keep documents private and expose only authorized metadata', function () {
+    Storage::fake('teacher-documents');
+    DB::table('school_administrators')->insert(['user_id' => $this->schoolAdmin->id, 'school_id' => $this->school->id]);
+    $data = ['title' => 'Synthetic achievement', 'issuer' => 'Synthetic issuer', 'awarded_on' => '2025-01-01',
+        'level' => 'Synthetic level', 'description' => 'Private synthetic detail'];
+    $url = route('dossiers.store', [$this->teacher, 'achievements']);
+    $this->actingAs($this->teacher)->postJson($url, $data)->assertNotFound();
+    config(['pedbase.education_catalog_enabled' => true]);
+    $this->postJson($url, [...$data, 'certificate' => UploadedFile::fake()->create('text.txt', 1, 'text/plain')])
+        ->assertUnprocessable()->assertJsonValidationErrors('certificate');
+    $this->post($url, [...$data, 'certificate' => UploadedFile::fake()->create('test.pdf', 1, 'application/pdf')])
+        ->assertSessionHasNoErrors();
+    $this->post($url, [...$data, 'title' => 'Another synthetic achievement'])->assertSessionHasNoErrors();
+    $record = $this->teacher->achievements()->where('title', $data['title'])->firstOrFail();
+    $download = route('dossiers.achievement-document', [$this->teacher, $record]);
+    $this->get($download)->assertDownload('achievement.pdf')->assertHeader('Cache-Control', 'no-store, private');
+    Storage::disk('teacher-documents')->assertExists($record->document_path);
+    $this->actingAs($this->schoolAdmin)->get(route('dossiers.show', $this->teacher))
+        ->assertInertia(fn (Assert $page) => $page->has('achievements.data', 2)->missing('achievements.data.0.description')
+            ->missing('achievements.data.1.document_path')->missing('achievements.data.1.has_certificate'));
+    $this->get($download)->assertForbidden();
+    $this->postJson($url, $data)->assertForbidden();
+    $this->actingAs($this->outsider)->get($download)->assertForbidden();
+    $this->actingAs($this->admin)->get($download)->assertDownload('achievement.pdf');
+    $update = route('dossiers.update', [$this->teacher, 'achievements', $record]);
+    $this->post($update, [...$data, 'certificate' => UploadedFile::fake()->create('replacement.pdf', 1, 'application/pdf')])
+        ->assertSessionHasNoErrors();
+    Storage::disk('teacher-documents')->assertMissing($record->document_path);
+    $replacement = $record->fresh()->document_path;
+    Storage::disk('teacher-documents')->assertExists($replacement);
+    $this->delete(route('dossiers.destroy', [$this->teacher, 'achievements', $record]))->assertRedirect();
+    Storage::disk('teacher-documents')->assertMissing($replacement);
+});
+
 test('all reports run with correct scope and CSV Excel exports are downloadable', function () {
     DB::table('schools')->where('id', $this->school->id)->update(['district_id' => $this->district->id]);
     DB::table('district_methodists')->insert(['user_id' => $this->methodist->id, 'district_id' => $this->district->id]);

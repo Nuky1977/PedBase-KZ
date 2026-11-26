@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 
 defineProps<{
     school: {
@@ -15,17 +18,17 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Мектепті өңдеу" />
+    <Head :title="t('Мектепті өңдеу')" />
 
     <div class="min-h-screen bg-gray-50 p-8">
         <div class="mx-auto max-w-2xl">
             <div class="mb-6">
                 <h1 class="text-3xl font-bold">
-                    Мектепті өңдеу
+                    {{ t('Мектепті өңдеу') }}
                 </h1>
 
                 <p class="mt-2 text-gray-500">
-                    Мектеп туралы мәліметтерді өзгерту
+                    {{ t('Мектеп туралы мәліметтерді өзгерту') }}
                 </p>
             </div>
 
@@ -38,7 +41,7 @@ defineProps<{
                 >
                     <div>
                         <label for="name" class="mb-1 block font-medium">
-                            Мектептің толық атауы *
+                            {{ t('Мектептің толық атауы *') }}
                         </label>
 
                         <input
@@ -57,7 +60,7 @@ defineProps<{
 
                     <div>
                         <label for="short_name" class="mb-1 block font-medium">
-                            Қысқаша атауы
+                            {{ t('Қысқаша атауы') }}
                         </label>
 
                         <input
@@ -68,14 +71,17 @@ defineProps<{
                             class="w-full rounded-md border p-2"
                         />
 
-                        <p v-if="errors.short_name" class="mt-1 text-sm text-red-600">
+                        <p
+                            v-if="errors.short_name"
+                            class="mt-1 text-sm text-red-600"
+                        >
                             {{ errors.short_name }}
                         </p>
                     </div>
 
                     <div>
                         <label for="bin" class="mb-1 block font-medium">
-                            БСН
+                            {{ t('БСН') }}
                         </label>
 
                         <input
@@ -95,7 +101,7 @@ defineProps<{
 
                     <div>
                         <label for="type" class="mb-1 block font-medium">
-                            Мектеп түрі
+                            {{ t('Мектеп түрі') }}
                         </label>
 
                         <select
@@ -104,21 +110,21 @@ defineProps<{
                             :value="school.type ?? ''"
                             class="w-full rounded-md border p-2"
                         >
-                            <option value="">Таңдаңыз</option>
+                            <option value="">{{ t('Таңдаңыз') }}</option>
                             <option value="Жалпы білім беретін мектеп">
-                                Жалпы білім беретін мектеп
+                                {{ t('Жалпы білім беретін мектеп') }}
                             </option>
                             <option value="Мектеп-гимназия">
-                                Мектеп-гимназия
+                                {{ t('Мектеп-гимназия') }}
                             </option>
                             <option value="Мектеп-лицей">
-                                Мектеп-лицей
+                                {{ t('Мектеп-лицей') }}
                             </option>
                             <option value="Негізгі орта мектеп">
-                                Негізгі орта мектеп
+                                {{ t('Негізгі орта мектеп') }}
                             </option>
                             <option value="Бастауыш мектеп">
-                                Бастауыш мектеп
+                                {{ t('Бастауыш мектеп') }}
                             </option>
                         </select>
 
@@ -129,7 +135,7 @@ defineProps<{
 
                     <div>
                         <label for="locality" class="mb-1 block font-medium">
-                            Елді мекен
+                            {{ t('Елді мекен') }}
                         </label>
 
                         <input
@@ -140,7 +146,10 @@ defineProps<{
                             class="w-full rounded-md border p-2"
                         />
 
-                        <p v-if="errors.locality" class="mt-1 text-sm text-red-600">
+                        <p
+                            v-if="errors.locality"
+                            class="mt-1 text-sm text-red-600"
+                        >
                             {{ errors.locality }}
                         </p>
                     </div>
@@ -155,7 +164,7 @@ defineProps<{
                         />
 
                         <label for="is_active" class="font-medium">
-                            Белсенді мектеп
+                            {{ t('Белсенді мектеп') }}
                         </label>
                     </div>
 
@@ -165,14 +174,18 @@ defineProps<{
                             :disabled="processing"
                             class="rounded-md bg-black px-5 py-2 text-white disabled:opacity-50"
                         >
-                            {{ processing ? 'Сақталуда...' : 'Өзгерістерді сақтау' }}
+                            {{
+                                processing
+                                    ? t('Сақталуда...')
+                                    : t('Өзгерістерді сақтау')
+                            }}
                         </button>
 
                         <Link
                             href="/admin/schools"
                             class="rounded-md border px-5 py-2"
                         >
-                            Болдырмау
+                            {{ t('Болдырмау') }}
                         </Link>
                     </div>
                 </Form>

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\Models\TeacherProfile;
+use App\Services\ProtectedIin;
 use App\UserRole;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class ProfileController extends Controller
 {
@@ -18,7 +21,8 @@ class ProfileController extends Controller
         abort_unless($user->role === UserRole::TEACHER, 403);
         $profile = $user->teacherProfile;
 
-        return Inertia::render('teacher/Profile', [
+        Inertia::encryptHistory();
+        $response = Inertia::render('teacher/Profile', [
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -41,23 +45,21 @@ class ProfileController extends Controller
                     'teaching_experience_months' => $profile->teaching_experience_months,
                 ]
                 : null,
-        ]);
+        ])->toResponse($request);
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, ProtectedIin $protection): RedirectResponse
     {
         $user = $request->user();
         abort_unless($user->role === UserRole::TEACHER, 403);
-
-        $profileId = $user->teacherProfile()
-            ->value('id');
 
         $validated = $request->validate([
             'iin' => [
                 'nullable',
                 'digits:12',
-                Rule::unique('teacher_profiles', 'iin')
-                    ->ignore($profileId),
             ],
 
             'birth_date' => [
@@ -94,7 +96,7 @@ class ProfileController extends Controller
                 'nullable',
                 'integer',
                 'min:1900',
-                'max:' . now()->year,
+                'max:'.now()->year,
             ],
 
             'diploma_number' => [
@@ -124,10 +126,20 @@ class ProfileController extends Controller
             ],
         ]);
 
-        $user->teacherProfile()->updateOrCreate(
-            [],
-            $validated
-        );
+        if (array_key_exists('iin', $validated) && TeacherProfile::query()->whereNotNull('iin')->exists()) {
+            throw ValidationException::withMessages(['iin' => __('ЖСН көшіру аяқталғанша бұл өрісті өзгерту қолжетімсіз.')]);
+        }
+
+        try {
+            $user->teacherProfile()->updateOrCreate([], $validated);
+        } catch (UniqueConstraintViolationException $exception) {
+            $lookup = isset($validated['iin']) ? $protection->fingerprint($validated['iin']) : null;
+            if (isset($lookup) && TeacherProfile::query()->where('iin_lookup', $lookup)->where('user_id', '<>', $user->id)->exists()) {
+                throw ValidationException::withMessages(['iin' => __('Бұл ЖСН бұрын тіркелген.')]);
+            }
+
+            throw $exception;
+        }
 
         $user->unsetRelation('teacherProfile');
 

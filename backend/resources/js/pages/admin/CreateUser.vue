@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 </script>
 
 <template>
-    <Head title="Пайдаланушы қосу" />
+    <Head :title="t('Пайдаланушы қосу')" />
 
     <div class="mx-auto max-w-2xl p-8">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold">
-                Жаңа пайдаланушы қосу
+            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                {{ t('Жаңа пайдаланушы қосу') }}
             </h1>
 
-            <p class="mt-1 text-sm text-gray-500">
-                PedBase KZ жүйесіне жаңа пайдаланушы тіркеу
+            <p class="mt-1 text-sm text-muted-foreground">
+                {{ t('PedBase KZ жүйесіне жаңа пайдаланушы тіркеу') }}
             </p>
         </div>
 
@@ -24,7 +27,7 @@ import { Form, Head } from '@inertiajs/vue3';
         >
             <div>
                 <label for="name" class="mb-1 block font-medium">
-                    Аты-жөні
+                    {{ t('Аты-жөні') }}
                 </label>
 
                 <input
@@ -42,7 +45,7 @@ import { Form, Head } from '@inertiajs/vue3';
 
             <div>
                 <label for="username" class="mb-1 block font-medium">
-                    Логин
+                    {{ t('Логин') }}
                 </label>
 
                 <input
@@ -60,7 +63,7 @@ import { Form, Head } from '@inertiajs/vue3';
 
             <div>
                 <label for="email" class="mb-1 block font-medium">
-                    Email
+                    {{ t('Email') }}
                 </label>
 
                 <input
@@ -78,7 +81,7 @@ import { Form, Head } from '@inertiajs/vue3';
 
             <div>
                 <label for="role" class="mb-1 block font-medium">
-                    Рөлі
+                    {{ t('Рөлі') }}
                 </label>
 
                 <select
@@ -87,10 +90,12 @@ import { Form, Head } from '@inertiajs/vue3';
                     required
                     class="w-full rounded-md border p-2"
                 >
-                    <option value="teacher">Педагог</option>
-                    <option value="school_admin">Мектеп әкімшісі</option>
-                    <option value="methodist">Әдіскер</option>
-                    <option value="admin">Жүйе әкімшісі</option>
+                    <option value="teacher">{{ t('Педагог') }}</option>
+                    <option value="school_admin">
+                        {{ t('Мектеп әкімшісі') }}
+                    </option>
+                    <option value="methodist">{{ t('Әдіскер') }}</option>
+                    <option value="admin">{{ t('Жүйе әкімшісі') }}</option>
                 </select>
 
                 <p v-if="errors.role" class="mt-1 text-sm text-red-600">
@@ -100,7 +105,7 @@ import { Form, Head } from '@inertiajs/vue3';
 
             <div>
                 <label for="password" class="mb-1 block font-medium">
-                    Уақытша құпия сөз
+                    {{ t('Уақытша құпия сөз') }}
                 </label>
 
                 <input
@@ -121,7 +126,7 @@ import { Form, Head } from '@inertiajs/vue3';
                 :disabled="processing"
                 class="rounded-md bg-black px-5 py-2 text-white disabled:opacity-50"
             >
-                {{ processing ? 'Сақталуда...' : 'Пайдаланушыны сақтау' }}
+                {{ processing ? t('Сақталуда...') : t('Пайдаланушыны сақтау') }}
             </button>
         </Form>
     </div>

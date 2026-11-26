@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useTranslation } from '@/composables/useTranslation';
 import type { TeacherEmployment } from '@/types/employment';
+
+const { t } = useTranslation();
 
 defineProps<{ employment: TeacherEmployment | null }>();
 
@@ -11,7 +14,7 @@ const format = new Intl.NumberFormat('kk-KZ', { maximumFractionDigits: 2 });
         v-if="!employment?.assignments.length"
         class="text-sm text-muted-foreground"
     >
-        Пән жүктемесі енгізілмеген. Барлығы: 0 сағат/апта.
+        {{ t('Пән жүктемесі енгізілмеген. Барлығы: 0 сағат/апта.') }}
     </p>
     <div v-else class="space-y-4">
         <section
@@ -23,15 +26,13 @@ const format = new Intl.NumberFormat('kk-KZ', { maximumFractionDigits: 2 });
                 class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2 text-sm font-medium"
             >
                 <h3>
-                    {{ total.academic_year }}–{{ total.academic_year + 1 }} оқу
-                    жылы
+                    {{ total.academic_year }}–{{ total.academic_year + 1 }}
+                    {{ t('оқу жылы') }}
                 </h3>
                 <span class="tabular-nums"
-                    >Барлығы:
-                    {{
-                        format.format(Number(total.weekly_hours))
-                    }}
-                    сағат/апта</span
+                    >{{ t('Барлығы:') }}
+                    {{ format.format(Number(total.weekly_hours)) }}
+                    {{ t('сағат/апта') }}</span
                 >
             </div>
             <ul class="divide-y">
@@ -46,10 +47,8 @@ const format = new Intl.NumberFormat('kk-KZ', { maximumFractionDigits: 2 });
                         assignment.subject_name
                     }}</span>
                     <span class="tabular-nums"
-                        >{{
-                            format.format(Number(assignment.weekly_hours))
-                        }}
-                        сағат/апта</span
+                        >{{ format.format(Number(assignment.weekly_hours)) }}
+                        {{ t('сағат/апта') }}</span
                     >
                     <slot name="actions" :assignment="assignment" />
                 </li>

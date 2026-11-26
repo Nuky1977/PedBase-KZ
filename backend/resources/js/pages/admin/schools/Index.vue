@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 
 type School = {
     id: number;
@@ -16,11 +19,11 @@ defineProps<{
 }>();
 
 const toggleSchoolStatus = (school: School) => {
-    const action = school.is_active
-        ? 'белсенді емес күйге ауыстыруға'
-        : 'белсенді күйге ауыстыруға';
+    const question = school.is_active
+        ? ':name мектебін белсенді емес күйге ауыстыруға сенімдісіз бе?'
+        : ':name мектебін белсенді күйге ауыстыруға сенімдісіз бе?';
 
-    if (!confirm(`${school.name} мектебін ${action} сенімдісіз бе?`)) {
+    if (!confirm(t(question, { name: school.name }))) {
         return;
     }
 
@@ -35,7 +38,7 @@ const toggleSchoolStatus = (school: School) => {
 </script>
 
 <template>
-    <Head title="Мектептер" />
+    <Head :title="t('Мектептер')" />
 
     <div class="min-h-screen bg-gray-50 p-8">
         <div class="mx-auto max-w-7xl">
@@ -43,11 +46,11 @@ const toggleSchoolStatus = (school: School) => {
             <div class="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h1 class="text-3xl font-bold">
-                        Мектептер
+                        {{ t('Мектептер') }}
                     </h1>
 
                     <p class="mt-2 text-gray-500">
-                        PedBase KZ — аудан мектептерінің тізімі
+                        {{ t('PedBase KZ — аудан мектептерінің тізімі') }}
                     </p>
                 </div>
 
@@ -55,7 +58,7 @@ const toggleSchoolStatus = (school: School) => {
                     href="/admin/schools/create"
                     class="rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
                 >
-                    + Мектеп қосу
+                    {{ t('+ Мектеп қосу') }}
                 </Link>
             </div>
 
@@ -64,36 +67,34 @@ const toggleSchoolStatus = (school: School) => {
                 <table class="w-full">
                     <thead class="bg-gray-50">
                         <tr>
+                            <th class="p-3 text-left">№</th>
+
                             <th class="p-3 text-left">
-                                №
+                                {{ t('Мектеп атауы') }}
                             </th>
 
                             <th class="p-3 text-left">
-                                Мектеп атауы
+                                {{ t('Қысқаша атауы') }}
                             </th>
 
                             <th class="p-3 text-left">
-                                Қысқаша атауы
+                                {{ t('БСН') }}
                             </th>
 
                             <th class="p-3 text-left">
-                                БСН
+                                {{ t('Түрі') }}
                             </th>
 
                             <th class="p-3 text-left">
-                                Түрі
+                                {{ t('Елді мекен') }}
                             </th>
 
                             <th class="p-3 text-left">
-                                Елді мекен
+                                {{ t('Мәртебесі') }}
                             </th>
 
                             <th class="p-3 text-left">
-                                Мәртебесі
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Әрекет
+                                {{ t('Әрекет') }}
                             </th>
                         </tr>
                     </thead>
@@ -140,14 +141,14 @@ const toggleSchoolStatus = (school: School) => {
                                     v-if="school.is_active"
                                     class="rounded-full bg-green-50 px-3 py-1 text-sm text-green-700"
                                 >
-                                    Белсенді
+                                    {{ t('Белсенді') }}
                                 </span>
 
                                 <span
                                     v-else
                                     class="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-500"
                                 >
-                                    Белсенді емес
+                                    {{ t('Белсенді емес') }}
                                 </span>
                             </td>
 
@@ -155,16 +156,16 @@ const toggleSchoolStatus = (school: School) => {
                             <td class="p-3">
                                 <div class="flex items-center gap-2">
                                     <Link
-    :href="`/admin/schools/${school.id}/teachers`"
-    class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
->
-    Педагогтар
-</Link>
+                                        :href="`/admin/schools/${school.id}/teachers`"
+                                        class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+                                    >
+                                        {{ t('Педагогтар') }}
+                                    </Link>
                                     <Link
                                         :href="`/admin/schools/${school.id}/edit`"
                                         class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
                                     >
-                                        Өңдеу
+                                        {{ t('Өңдеу') }}
                                     </Link>
 
                                     <button
@@ -174,8 +175,8 @@ const toggleSchoolStatus = (school: School) => {
                                     >
                                         {{
                                             school.is_active
-                                                ? 'Белсенді емес ету'
-                                                : 'Белсенді ету'
+                                                ? t('Белсенді емес ету')
+                                                : t('Белсенді ету')
                                         }}
                                     </button>
                                 </div>
@@ -188,7 +189,7 @@ const toggleSchoolStatus = (school: School) => {
                                 colspan="8"
                                 class="p-8 text-center text-gray-500"
                             >
-                                Мектептер әлі енгізілмеген.
+                                {{ t('Мектептер әлі енгізілмеген.') }}
                             </td>
                         </tr>
                     </tbody>

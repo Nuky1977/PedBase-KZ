@@ -12,6 +12,7 @@ class TeacherDossierPolicy
         return $teacher->role === UserRole::TEACHER && (
             $actor->isAdmin() || $actor->is($teacher)
             || app(OrganizationScope::class)->containsTeacher($actor, $teacher)
+            || (config('pedbase.education_catalog_enabled') && app(EducationOrganizationScope::class)->containsTeacher($actor, $teacher))
         );
     }
 

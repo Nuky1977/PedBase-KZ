@@ -13,6 +13,12 @@ class AccountRemoval
         $paths = $user->getConnection()->transaction(function () use ($user) {
             $lockedUser = User::query()->lockForUpdate()->findOrFail($user->id);
             abort_if($lockedUser->isAdmin(), 403);
+            abort_if(
+                (Schema::hasTable('teacher_achievements') && $lockedUser->achievements()->exists())
+                || (Schema::hasTable('education_employments') && $user->getConnection()->table('education_employments')->where('user_id', $user->id)->exists()),
+                409,
+                'Еңбек тарихы немесе кәсіби жетістіктері бар аккаунтты жоюға болмайды.',
+            );
 
             $paths = Schema::hasTable('teacher_courses')
                 ? $lockedUser->courses()->whereNotNull('certificate_path')->pluck('certificate_path')->all()

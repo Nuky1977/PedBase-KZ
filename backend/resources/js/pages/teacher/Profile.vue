@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { useTranslation } from '@/composables/useTranslation';
+
+const { t } = useTranslation();
 
 type User = {
     id: number;
@@ -29,7 +32,7 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Менің профилім" />
+    <Head :title="t('Менің профилім')" />
 
     <div class="min-h-screen bg-gray-50 p-8">
         <div class="mx-auto max-w-5xl">
@@ -37,11 +40,11 @@ defineProps<{
             <div class="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h1 class="text-3xl font-bold">
-                        Менің профилім
+                        {{ t('Менің профилім') }}
                     </h1>
 
                     <p class="mt-2 text-gray-500">
-                        PedBase KZ — педагогтің электрондық іс қағазы
+                        {{ t('PedBase KZ — педагогтің электрондық іс қағазы') }}
                     </p>
                 </div>
 
@@ -49,20 +52,20 @@ defineProps<{
                     href="/teacher"
                     class="rounded-md border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
                 >
-                    ← Кабинетке қайту
+                    {{ t('← Кабинетке қайту') }}
                 </Link>
             </div>
 
             <!-- Аккаунт мәліметтері -->
             <div class="mb-6 rounded-xl border bg-white p-6">
                 <h2 class="mb-5 text-xl font-semibold">
-                    Аккаунт мәліметтері
+                    {{ t('Аккаунт мәліметтері') }}
                 </h2>
 
                 <div class="grid gap-5 md:grid-cols-3">
                     <div>
                         <div class="text-sm text-gray-500">
-                            Аты-жөні
+                            {{ t('Аты-жөні') }}
                         </div>
 
                         <div class="mt-1 font-medium">
@@ -72,7 +75,7 @@ defineProps<{
 
                     <div>
                         <div class="text-sm text-gray-500">
-                            Логин
+                            {{ t('Логин') }}
                         </div>
 
                         <div class="mt-1 font-medium">
@@ -82,7 +85,7 @@ defineProps<{
 
                     <div>
                         <div class="text-sm text-gray-500">
-                            Email
+                            {{ t('Email') }}
                         </div>
 
                         <div class="mt-1 font-medium">
@@ -102,16 +105,13 @@ defineProps<{
                 <!-- Жеке мәліметтер -->
                 <div class="rounded-xl border bg-white p-6">
                     <h2 class="mb-5 text-xl font-semibold">
-                        Жеке мәліметтер
+                        {{ t('Жеке мәліметтер') }}
                     </h2>
 
                     <div class="grid gap-5 md:grid-cols-2">
                         <div>
-                            <label
-                                for="iin"
-                                class="mb-1 block font-medium"
-                            >
-                                ЖСН
+                            <label for="iin" class="mb-1 block font-medium">
+                                {{ t('ЖСН') }}
                             </label>
 
                             <input
@@ -122,7 +122,7 @@ defineProps<{
                                 maxlength="12"
                                 :value="profile?.iin ?? ''"
                                 class="w-full rounded-md border p-2"
-                                placeholder="12 таңбалы ЖСН"
+                                :placeholder="t('12 таңбалы ЖСН')"
                             />
 
                             <p
@@ -138,7 +138,7 @@ defineProps<{
                                 for="birth_date"
                                 class="mb-1 block font-medium"
                             >
-                                Туған күні
+                                {{ t('Туған күні') }}
                             </label>
 
                             <input
@@ -158,11 +158,8 @@ defineProps<{
                         </div>
 
                         <div>
-                            <label
-                                for="gender"
-                                class="mb-1 block font-medium"
-                            >
-                                Жынысы
+                            <label for="gender" class="mb-1 block font-medium">
+                                {{ t('Жынысы') }}
                             </label>
 
                             <select
@@ -172,15 +169,15 @@ defineProps<{
                                 class="w-full rounded-md border p-2"
                             >
                                 <option value="">
-                                    Таңдаңыз
+                                    {{ t('Таңдаңыз') }}
                                 </option>
 
                                 <option value="Ер">
-                                    Ер
+                                    {{ t('Ер') }}
                                 </option>
 
                                 <option value="Әйел">
-                                    Әйел
+                                    {{ t('Әйел') }}
                                 </option>
                             </select>
 
@@ -193,11 +190,8 @@ defineProps<{
                         </div>
 
                         <div>
-                            <label
-                                for="phone"
-                                class="mb-1 block font-medium"
-                            >
-                                Телефон
+                            <label for="phone" class="mb-1 block font-medium">
+                                {{ t('Телефон') }}
                             </label>
 
                             <input
@@ -222,7 +216,7 @@ defineProps<{
                 <!-- Білімі -->
                 <div class="rounded-xl border bg-white p-6">
                     <h2 class="mb-5 text-xl font-semibold">
-                        Білімі
+                        {{ t('Білімі') }}
                     </h2>
 
                     <div class="grid gap-5 md:grid-cols-2">
@@ -231,7 +225,7 @@ defineProps<{
                                 for="education_level"
                                 class="mb-1 block font-medium"
                             >
-                                Білім деңгейі
+                                {{ t('Білім деңгейі') }}
                             </label>
 
                             <select
@@ -241,23 +235,23 @@ defineProps<{
                                 class="w-full rounded-md border p-2"
                             >
                                 <option value="">
-                                    Таңдаңыз
+                                    {{ t('Таңдаңыз') }}
                                 </option>
 
                                 <option value="Жоғары">
-                                    Жоғары
+                                    {{ t('Жоғары') }}
                                 </option>
 
                                 <option value="Жоғары оқу орнынан кейінгі">
-                                    Жоғары оқу орнынан кейінгі
+                                    {{ t('Жоғары оқу орнынан кейінгі') }}
                                 </option>
 
                                 <option value="Техникалық және кәсіптік">
-                                    Техникалық және кәсіптік
+                                    {{ t('Техникалық және кәсіптік') }}
                                 </option>
 
                                 <option value="Орта білімнен кейінгі">
-                                    Орта білімнен кейінгі
+                                    {{ t('Орта білімнен кейінгі') }}
                                 </option>
                             </select>
 
@@ -274,18 +268,18 @@ defineProps<{
                                 for="educational_institution"
                                 class="mb-1 block font-medium"
                             >
-                                Білім беру ұйымы
+                                {{ t('Білім беру ұйымы') }}
                             </label>
 
                             <input
                                 id="educational_institution"
                                 name="educational_institution"
                                 type="text"
-                                :value="
-                                    profile?.educational_institution ?? ''
-                                "
+                                :value="profile?.educational_institution ?? ''"
                                 class="w-full rounded-md border p-2"
-                                placeholder="Университет немесе колледж атауы"
+                                :placeholder="
+                                    t('Университет немесе колледж атауы')
+                                "
                             />
 
                             <p
@@ -301,7 +295,7 @@ defineProps<{
                                 for="graduation_year"
                                 class="mb-1 block font-medium"
                             >
-                                Бітірген жылы
+                                {{ t('Бітірген жылы') }}
                             </label>
 
                             <input
@@ -311,7 +305,7 @@ defineProps<{
                                 min="1900"
                                 :value="profile?.graduation_year ?? ''"
                                 class="w-full rounded-md border p-2"
-                                placeholder="Мысалы: 2010"
+                                :placeholder="t('Мысалы: 2010')"
                             />
 
                             <p
@@ -327,7 +321,7 @@ defineProps<{
                                 for="diploma_number"
                                 class="mb-1 block font-medium"
                             >
-                                Диплом нөмірі
+                                {{ t('Диплом нөмірі') }}
                             </label>
 
                             <input
@@ -351,7 +345,7 @@ defineProps<{
                                 for="specialty"
                                 class="mb-1 block font-medium"
                             >
-                                Диплом бойынша мамандығы
+                                {{ t('Диплом бойынша мамандығы') }}
                             </label>
 
                             <input
@@ -360,7 +354,7 @@ defineProps<{
                                 type="text"
                                 :value="profile?.specialty ?? ''"
                                 class="w-full rounded-md border p-2"
-                                placeholder="Мысалы: Информатика"
+                                :placeholder="t('Мысалы: Информатика')"
                             />
 
                             <p
@@ -376,12 +370,15 @@ defineProps<{
                 <!-- Еңбек өтілі -->
                 <div class="rounded-xl border bg-white p-6">
                     <h2 class="mb-2 text-xl font-semibold">
-                        Еңбек өтілі
+                        {{ t('Еңбек өтілі') }}
                     </h2>
 
                     <p class="mb-5 text-sm text-gray-500">
-                        Өтіл әзірге ай санымен енгізіледі.
-                        Мысалы: 10 жыл = 120 ай.
+                        {{
+                            t(
+                                'Өтіл әзірге ай санымен енгізіледі. Мысалы: 10 жыл = 120 ай.',
+                            )
+                        }}
                     </p>
 
                     <div class="grid gap-5 md:grid-cols-2">
@@ -390,7 +387,7 @@ defineProps<{
                                 for="total_experience_months"
                                 class="mb-1 block font-medium"
                             >
-                                Жалпы еңбек өтілі, ай
+                                {{ t('Жалпы еңбек өтілі, ай') }}
                             </label>
 
                             <input
@@ -399,11 +396,9 @@ defineProps<{
                                 type="number"
                                 min="0"
                                 max="1200"
-                                :value="
-                                    profile?.total_experience_months ?? ''
-                                "
+                                :value="profile?.total_experience_months ?? ''"
                                 class="w-full rounded-md border p-2"
-                                placeholder="Мысалы: 264"
+                                :placeholder="t('Мысалы: 264')"
                             />
 
                             <p
@@ -419,7 +414,7 @@ defineProps<{
                                 for="teaching_experience_months"
                                 class="mb-1 block font-medium"
                             >
-                                Педагогикалық өтілі, ай
+                                {{ t('Педагогикалық өтілі, ай') }}
                             </label>
 
                             <input
@@ -432,7 +427,7 @@ defineProps<{
                                     profile?.teaching_experience_months ?? ''
                                 "
                                 class="w-full rounded-md border p-2"
-                                placeholder="Мысалы: 252"
+                                :placeholder="t('Мысалы: 252')"
                             />
 
                             <p
@@ -451,7 +446,7 @@ defineProps<{
                         href="/teacher"
                         class="rounded-md border bg-white px-5 py-2"
                     >
-                        Болдырмау
+                        {{ t('Болдырмау') }}
                     </Link>
 
                     <button
@@ -461,8 +456,8 @@ defineProps<{
                     >
                         {{
                             processing
-                                ? 'Сақталуда...'
-                                : 'Профильді сақтау'
+                                ? t('Сақталуда...')
+                                : t('Профильді сақтау')
                         }}
                     </button>
                 </div>

@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router, useForm } from '@inertiajs/vue3';
+import { watch } from 'vue';
+import PageLinks from '@/components/PageLinks.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/composables/useTranslation';
 import { school as schoolEmployment } from '@/routes/admin/employment';
+import { teachers as schoolTeachers } from '@/routes/admin/schools';
+import { show as dossier } from '@/routes/dossiers';
+
+const { t } = useTranslation();
 
 type School = {
     id: number;
@@ -16,46 +25,63 @@ type Teacher = {
     is_primary?: boolean;
 };
 
-defineProps<{
+const props = defineProps<{
     school: School;
-    teachers: Teacher[];
+    teachers: {
+        data: Teacher[];
+        prev_page_url: string | null;
+        next_page_url: string | null;
+    };
+    filters: { name: string };
+    teacherCount: number;
     availableTeachers: Teacher[];
 }>();
 
-const detachTeacher = (
-    schoolId: number,
-    teacher: Teacher,
-): void => {
+const search = useForm({ name: props.filters.name });
+watch(
+    () => props.filters.name,
+    (value) => {
+        search.name = value;
+    },
+);
+
+function filter() {
+    search.get(schoolTeachers.url(props.school.id), {
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
+const detachTeacher = (schoolId: number, teacher: Teacher): void => {
     if (teacher.is_primary) {
         return;
     }
 
     const confirmed = window.confirm(
-        `${teacher.name} педагогін осы мектептен ажыратуға сенімдісіз бе?`,
+        t(':name педагогін осы мектептен ажыратуға сенімдісіз бе?', {
+            name: teacher.name,
+        }),
     );
 
     if (!confirmed) {
         return;
     }
 
-    router.delete(
-        `/admin/schools/${schoolId}/teachers/${teacher.id}`,
-        {
-            preserveScroll: true,
-        },
-    );
+    router.delete(`/admin/schools/${schoolId}/teachers/${teacher.id}`, {
+        preserveScroll: true,
+    });
 };
 
-const makeTeacherPrimary = (
-    schoolId: number,
-    teacher: Teacher,
-): void => {
+const makeTeacherPrimary = (schoolId: number, teacher: Teacher): void => {
     if (teacher.is_primary) {
         return;
     }
 
     const confirmed = window.confirm(
-        `${teacher.name} педагогі үшін осы мектепті негізгі жұмыс орны ретінде белгілеуге сенімдісіз бе?`,
+        t(
+            ':name педагогі үшін осы мектепті негізгі жұмыс орны ретінде белгілеуге сенімдісіз бе?',
+            { name: teacher.name },
+        ),
     );
 
     if (!confirmed) {
@@ -73,47 +99,50 @@ const makeTeacherPrimary = (
 </script>
 
 <template>
-    <Head :title="`${school.name} — педагогтар`" />
+    <Head :title="t(':name — педагогтер', { name: school.name })" />
 
-    <div class="min-h-screen bg-gray-50 p-8">
+    <div class="min-h-full bg-muted/40 p-4 sm:p-8">
         <div class="mx-auto max-w-7xl">
             <!-- Тақырып -->
-            <div class="mb-6 flex items-start justify-between gap-4">
+            <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h1 class="text-3xl font-bold">
                         {{ school.name }}
                     </h1>
 
-                    <p class="mt-2 text-gray-500">
-                        Мектепке тіркелген педагогтарды басқару
+                    <p class="mt-2 text-muted-foreground">
+                        {{ t('Мектепке тіркелген педагогтарды басқару') }}
                     </p>
                 </div>
 
                 <div class="flex flex-wrap gap-2">
                     <Link
                         :href="schoolEmployment(school.id)"
-                        class="rounded-md border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                        class="rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-gray-50"
                     >
-                        Еңбек деректері
+                        {{ t('Еңбек деректері') }}
                     </Link>
                     <Link
                         href="/admin/schools"
-                        class="rounded-md border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                        class="rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-gray-50"
                     >
-                        ← Мектептерге қайту
+                        {{ t('← Мектептерге қайту') }}
                     </Link>
                 </div>
             </div>
 
             <!-- Педагогты мектепке бекіту -->
-            <div class="mb-6 rounded-xl border bg-white p-6">
+            <div class="mb-6 rounded-xl border bg-card p-6">
                 <h2 class="text-xl font-semibold">
-                    Педагогты мектепке бекіту
+                    {{ t('Педагогты мектепке бекіту') }}
                 </h2>
 
-                <p class="mt-1 text-sm text-gray-500">
-                    Жүйеде тіркелген педагогты таңдап,
-                    жұмыс орнының түрін көрсетіңіз.
+                <p class="mt-1 text-sm text-muted-foreground">
+                    {{
+                        t(
+                            'Жүйеде тіркелген педагогты таңдап, жұмыс орнының түрін көрсетіңіз.',
+                        )
+                    }}
                 </p>
 
                 <Form
@@ -124,11 +153,8 @@ const makeTeacherPrimary = (
                 >
                     <!-- Педагог -->
                     <div>
-                        <label
-                            for="teacher_id"
-                            class="mb-1 block font-medium"
-                        >
-                            Педагог
+                        <label for="teacher_id" class="mb-1 block font-medium">
+                            {{ t('Педагог') }}
                         </label>
 
                         <select
@@ -138,7 +164,7 @@ const makeTeacherPrimary = (
                             class="w-full rounded-md border p-2"
                         >
                             <option value="">
-                                Педагогты таңдаңыз
+                                {{ t('Педагогты таңдаңыз') }}
                             </option>
 
                             <option
@@ -161,11 +187,8 @@ const makeTeacherPrimary = (
 
                     <!-- Жұмыс орны -->
                     <div>
-                        <label
-                            for="is_primary"
-                            class="mb-1 block font-medium"
-                        >
-                            Жұмыс орны
+                        <label for="is_primary" class="mb-1 block font-medium">
+                            {{ t('Жұмыс орны') }}
                         </label>
 
                         <select
@@ -175,11 +198,11 @@ const makeTeacherPrimary = (
                             class="w-full rounded-md border p-2"
                         >
                             <option value="1">
-                                Негізгі жұмыс орны
+                                {{ t('Негізгі жұмыс орны') }}
                             </option>
 
                             <option value="0">
-                                Қосымша жұмыс орны
+                                {{ t('Қосымша жұмыс орны') }}
                             </option>
                         </select>
 
@@ -196,15 +219,14 @@ const makeTeacherPrimary = (
                         <button
                             type="submit"
                             :disabled="
-                                processing ||
-                                availableTeachers.length === 0
+                                processing || availableTeachers.length === 0
                             "
                             class="w-full rounded-md bg-black px-5 py-2 text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {{
                                 processing
-                                    ? 'Бекітілуде...'
-                                    : 'Педагогты бекіту'
+                                    ? t('Бекітілуде...')
+                                    : t('Педагогты бекіту')
                             }}
                         </button>
                     </div>
@@ -212,153 +234,139 @@ const makeTeacherPrimary = (
 
                 <p
                     v-if="availableTeachers.length === 0"
-                    class="mt-4 text-sm text-gray-500"
+                    class="mt-4 text-sm text-muted-foreground"
                 >
-                    Бекітуге қолжетімді педагог жоқ.
+                    {{ t('Бекітуге қолжетімді педагог жоқ.') }}
                 </p>
             </div>
 
             <!-- Педагогтар саны -->
-            <div class="mb-6 rounded-xl border bg-white p-5">
-                <div class="text-sm text-gray-500">
-                    Педагогтар саны
+            <div class="mb-6 rounded-xl border bg-card p-5">
+                <div class="text-sm text-muted-foreground">
+                    {{ t('Педагогтар саны') }}
                 </div>
 
                 <div class="mt-1 text-3xl font-bold">
-                    {{ teachers.length }}
+                    {{ teacherCount }}
                 </div>
             </div>
 
             <!-- Педагогтар кестесі -->
-            <div class="overflow-hidden rounded-xl border bg-white">
-                <table class="w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="p-3 text-left">
-                                №
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Аты-жөні
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Логин
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Email
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Жұмыс орны
-                            </th>
-
-                            <th class="p-3 text-left">
-                                Әрекет
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="(teacher, index) in teachers"
-                            :key="teacher.id"
-                            class="border-t"
+            <form
+                class="mb-4 space-y-2 rounded-xl border bg-card p-4"
+                @submit.prevent="filter"
+            >
+                <label
+                    for="assigned-teacher-search"
+                    class="mb-2 block text-sm font-medium"
+                    >{{ t('Аты-жөні бойынша іздеу') }}</label
+                >
+                <Input
+                    id="assigned-teacher-search"
+                    v-model="search.name"
+                    type="search"
+                    maxlength="150"
+                    class="min-h-11 sm:max-w-sm"
+                />
+                <div class="flex flex-wrap gap-2">
+                    <Button class="min-h-11" :disabled="search.processing">{{
+                        t('Іздеу')
+                    }}</Button>
+                    <Button variant="outline" class="min-h-11" as-child
+                        ><Link :href="schoolTeachers(school.id)">{{
+                            t('Тазарту')
+                        }}</Link></Button
+                    >
+                </div>
+                <p
+                    v-if="search.errors.name"
+                    class="text-destructive"
+                    role="alert"
+                >
+                    {{ search.errors.name }}
+                </p>
+            </form>
+            <p
+                v-if="!teachers.data.length"
+                class="rounded-xl border border-dashed p-5 text-muted-foreground"
+            >
+                {{
+                    teacherCount
+                        ? t('Іздеуге сәйкес педагог табылмады.')
+                        : t('Бұл мектепке педагог бекітілмеген.')
+                }}
+            </p>
+            <ul v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <li
+                    v-for="teacher in teachers.data"
+                    :key="teacher.id"
+                    class="flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs"
+                >
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span
+                            class="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-sm font-semibold text-blue-800"
+                            aria-hidden="true"
+                            >{{
+                                teacher.name
+                                    .trim()
+                                    .slice(0, 1)
+                                    .toLocaleUpperCase('kk-KZ')
+                            }}</span
                         >
-                            <!-- № -->
-                            <td class="p-3">
-                                {{ index + 1 }}
-                            </td>
-
-                            <!-- Аты-жөні -->
-                            <td class="p-3 font-medium">
-                                {{ teacher.name }}
-                            </td>
-
-                            <!-- Логин -->
-                            <td class="p-3">
+                        <div class="min-w-0 wrap-anywhere">
+                            <h2 class="font-semibold">{{ teacher.name }}</h2>
+                            <p class="text-sm text-muted-foreground">
                                 {{ teacher.username }}
-                            </td>
-
-                            <!-- Email -->
-                            <td class="p-3">
+                            </p>
+                            <p class="text-sm text-muted-foreground">
                                 {{ teacher.email }}
-                            </td>
-
-                            <!-- Жұмыс орны -->
-                            <td class="p-3">
-                                <span
-                                    v-if="teacher.is_primary"
-                                    class="rounded-full bg-green-50 px-3 py-1 text-sm text-green-700"
-                                >
-                                    Негізгі жұмыс орны
-                                </span>
-
-                                <span
-                                    v-else
-                                    class="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600"
-                                >
-                                    Қосымша жұмыс орны
-                                </span>
-                            </td>
-
-                            <!-- Әрекеттер -->
-                            <td class="p-3">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <!-- Қосымша мектепті негізгі ету -->
-                                    <button
-                                        v-if="!teacher.is_primary"
-                                        type="button"
-                                        class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
-                                        @click="
-                                            makeTeacherPrimary(
-                                                school.id,
-                                                teacher,
-                                            )
-                                        "
-                                    >
-                                        Негізгі ету
-                                    </button>
-
-                                    <!-- Мектептен ажырату -->
-                                    <button
-                                        type="button"
-                                        :disabled="teacher.is_primary"
-                                        class="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                                        @click="
-                                            detachTeacher(
-                                                school.id,
-                                                teacher,
-                                            )
-                                        "
-                                    >
-                                        Ажырату
-                                    </button>
-                                </div>
-
-                                <p
-                                    v-if="teacher.is_primary"
-                                    class="mt-1 max-w-52 text-xs text-gray-500"
-                                >
-                                    Негізгі жұмыс орнын тікелей
-                                    ажыратуға болмайды
-                                </p>
-                            </td>
-                        </tr>
-
-                        <!-- Педагогтар жоқ -->
-                        <tr v-if="teachers.length === 0">
-                            <td
-                                colspan="6"
-                                class="p-8 text-center text-gray-500"
+                            </p>
+                        </div>
+                    </div>
+                    <span
+                        class="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-medium"
+                    >
+                        {{
+                            teacher.is_primary
+                                ? t('Негізгі жұмыс орны')
+                                : t('Қосымша жұмыс орны')
+                        }}
+                    </span>
+                    <div class="mt-auto flex flex-wrap gap-2">
+                        <Button variant="outline" class="min-h-11" as-child>
+                            <Link :href="dossier(teacher.id)">{{
+                                t('Жеке іс')
+                            }}</Link>
+                        </Button>
+                        <template v-if="!teacher.is_primary">
+                            <Button
+                                variant="outline"
+                                class="min-h-11"
+                                @click="makeTeacherPrimary(school.id, teacher)"
+                                >{{ t('Негізгі ету') }}</Button
                             >
-                                Бұл мектепке педагогтар әлі тіркелмеген.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                            <Button
+                                variant="outline"
+                                class="min-h-11"
+                                @click="detachTeacher(school.id, teacher)"
+                                >{{ t('Ажырату') }}</Button
+                            >
+                        </template>
+                    </div>
+                    <p
+                        v-if="teacher.is_primary"
+                        class="text-xs text-muted-foreground"
+                    >
+                        {{
+                            t('Негізгі жұмыс орнын тікелей ажыратуға болмайды.')
+                        }}
+                    </p>
+                </li>
+            </ul>
+            <PageLinks
+                :previous="teachers.prev_page_url"
+                :next="teachers.next_page_url"
+            />
         </div>
     </div>
 </template>

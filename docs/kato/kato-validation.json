@@ -1,0 +1,29 @@
+{
+    "source_url": "https://stat.gov.kz/upload/iblock/127/4ct86a3xyx9cjx5uy6inndmigqn6a6xv/%D0%9A%D0%90%D0%A2%D0%9E_17.11.2026.xlsx",
+    "source_updated_on": "2026-11-17",
+    "source_sha256": "7dd2a5cde003b664cdd581a5805bacd33405181d702731265476d2c46cb2d660",
+    "source_rows": 15585,
+    "selected_counts": {
+        "oblast": 17,
+        "oblast_city": 39,
+        "district": 195,
+        "district_city": 48,
+        "republican_city": 3
+    },
+    "out_of_scope_rows": 15283,
+    "import_regions": 20,
+    "import_areas": 282,
+    "errors": [],
+    "manual_review": [
+        {
+            "code": "431910000",
+            "name": "Байқоңыр қ.",
+            "reason": "special_status_city_check_before_rollout"
+        },
+        {
+            "code": "475220100",
+            "name": "Форт-Шевченко ќ.",
+            "reason": "source_name_contains_macedonian_character"
+        }
+    ]
+}

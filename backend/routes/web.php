@@ -1,19 +1,28 @@
 <?php
+
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EducationRegistrationController;
+use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\SpreadsheetImportController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\EducationOrganizationController;
+use App\Http\Controllers\EducationReportController;
+use App\Http\Controllers\InterfaceLocaleController;
+use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\Teacher\ProfileController;
+use App\Http\Controllers\TeacherDossierController;
+use App\Http\Controllers\TeacherEmploymentController;
+use App\Services\TeacherDirectory;
+use App\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\SchoolController;
-use App\Http\Controllers\Teacher\ProfileController;
-use App\Http\Controllers\TeacherEmploymentController;
-use App\Http\Controllers\OrganizationController;
-use App\Http\Controllers\TeacherDossierController;
-use App\Http\Controllers\EducationReportController;
-use App\UserRole;
+use Inertia\Inertia;
+
 Route::inertia('/', 'Welcome')->name('home');
+Route::post('/interface-locale', InterfaceLocaleController::class)->name('interface-locale.update');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function (Request $request) {
+    Route::get('dashboard', function (Request $request, TeacherDirectory $directory) {
         if ($request->user()->isAdmin()) {
             return to_route('admin.dashboard');
         }
@@ -22,16 +31,51 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return to_route('organization.index');
         }
 
-        return \Inertia\Inertia::render('Dashboard');
+        return Inertia::render('Dashboard', ['placements' => $directory->personalPlacements($request->user())]);
     })->name('dashboard');
 });
 
 require __DIR__.'/settings.php';
 
+Route::middleware(['auth', 'admin'])->prefix('/admin/imports')->name('admin.imports.')->group(function () {
+    Route::get('/', [SpreadsheetImportController::class, 'index'])->name('index');
+    Route::get('/{kind}/template', [SpreadsheetImportController::class, 'template'])
+        ->whereIn('kind', ['schools', 'teachers'])->name('template');
+    Route::post('/{kind}/preview', [SpreadsheetImportController::class, 'preview'])
+        ->whereIn('kind', ['schools', 'teachers'])->middleware('throttle:20,1')->name('preview');
+    Route::post('/{kind}/confirm', [SpreadsheetImportController::class, 'confirm'])
+        ->whereIn('kind', ['schools', 'teachers'])->middleware('throttle:5,1')->name('confirm');
+});
+
+Route::middleware(['auth', 'admin'])->prefix('education-organizations')->name('education-organizations.')->controller(EducationRegistrationController::class)->group(function () {
+    Route::get('create', 'create')->name('create');
+    Route::post('/', 'store')->name('store');
+    Route::get('imports', 'imports')->name('imports.index');
+    Route::post('imports/preview', 'preview')->middleware('throttle:20,1,education-preview')->name('imports.preview');
+    Route::post('imports/confirm', 'confirm')->middleware('throttle:5,1,education-confirm')->name('imports.confirm');
+});
+
 Route::middleware('auth')->group(function () {
+    Route::get('/education-organizations/reports', [EducationReportController::class, 'catalog'])->name('education-organizations.reports.index');
+    Route::get('/education-organizations/reports/{format}', [EducationReportController::class, 'exportCatalog'])
+        ->whereIn('format', ['csv', 'xlsx'])->name('education-organizations.reports.export');
+    Route::get('/education-organizations/{organization}/edit', [EducationRegistrationController::class, 'edit'])
+        ->whereNumber('organization')->name('education-organizations.edit');
+    Route::put('/education-organizations/{organization}', [EducationRegistrationController::class, 'update'])
+        ->whereNumber('organization')->name('education-organizations.update');
+    Route::get('/education-organizations', [EducationOrganizationController::class, 'index'])->name('education-organizations.index');
+    Route::get('/education-organizations/templates/{type}', [EducationOrganizationController::class, 'employmentTemplate'])
+        ->middleware('admin')->name('education-organizations.template');
+    Route::get('/education-organizations/{organization}', [EducationOrganizationController::class, 'show'])
+        ->whereNumber('organization')->name('education-organizations.show');
+    Route::patch('/education-organizations/{organization}/status', [EducationOrganizationController::class, 'updateStatus'])
+        ->whereNumber('organization')->name('education-organizations.status');
+    Route::get('/teacher/organization-employment', [EducationOrganizationController::class, 'employment'])->name('teacher.organization-employment');
+
     Route::get('/teacher/employment', [TeacherEmploymentController::class, 'mine'])->name('teacher.employment.index');
 
     Route::get('/organization', [OrganizationController::class, 'index'])->name('organization.index');
+    Route::get('/organization/teachers', [OrganizationController::class, 'teachers'])->name('organization.teachers');
     Route::get('/organization/schools/{school}', [OrganizationController::class, 'school'])->name('organization.school');
     Route::get('/organization/access', [OrganizationController::class, 'access'])->name('organization.access');
     Route::post('/organization/access/{operation}', [OrganizationController::class, 'saveAccess'])
@@ -40,9 +84,10 @@ Route::middleware('auth')->group(function () {
     Route::prefix('/dossiers/{teacher}')->name('dossiers.')->controller(TeacherDossierController::class)->group(function () {
         Route::get('/', 'show')->name('show');
         Route::get('/certificates/{course}', 'certificate')->whereNumber('course')->name('certificate');
-        Route::post('/{kind}', 'store')->whereIn('kind', ['diplomas', 'courses', 'attestations'])->name('store');
-        Route::post('/{kind}/{record}', 'update')->whereIn('kind', ['diplomas', 'courses', 'attestations'])->whereNumber('record')->name('update');
-        Route::delete('/{kind}/{record}', 'destroy')->whereIn('kind', ['diplomas', 'courses', 'attestations'])->whereNumber('record')->name('destroy');
+        Route::get('/achievement-documents/{achievement}', 'achievementDocument')->whereNumber('achievement')->name('achievement-document');
+        Route::post('/{kind}', 'store')->whereIn('kind', ['diplomas', 'courses', 'attestations', 'achievements'])->name('store');
+        Route::post('/{kind}/{record}', 'update')->whereIn('kind', ['diplomas', 'courses', 'attestations', 'achievements'])->whereNumber('record')->name('update');
+        Route::delete('/{kind}/{record}', 'destroy')->whereIn('kind', ['diplomas', 'courses', 'attestations', 'achievements'])->whereNumber('record')->name('destroy');
     });
 
     Route::get('/reports', [EducationReportController::class, 'index'])->name('reports.index');
@@ -67,7 +112,7 @@ Route::middleware(['auth', 'admin'])
 Route::middleware(['auth', 'admin'])
     ->get('/admin/users', [UserController::class, 'index'])
     ->name('admin.users.index');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->get('/admin/users/create', [UserController::class, 'create'])
     ->name('admin.users.create');
 
@@ -82,59 +127,59 @@ Route::middleware(['auth', 'admin'])
 Route::middleware(['auth', 'admin'])
     ->put('/admin/users/{user}', [UserController::class, 'update'])
     ->name('admin.users.update');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->delete('/admin/users/{user}', [UserController::class, 'destroy'])
     ->name('admin.users.destroy');
-    Route::middleware(['auth', 'methodist'])
-    ->get('/methodist', fn () => \Inertia\Inertia::render('methodist/Dashboard'))
+Route::middleware(['auth', 'methodist'])
+    ->get('/methodist', fn () => Inertia::render('methodist/Dashboard'))
     ->name('methodist.dashboard');
-    Route::middleware(['auth', 'school_admin'])
-    ->get('/school-admin', fn () => \Inertia\Inertia::render('school-admin/Dashboard'))
+Route::middleware(['auth', 'school_admin'])
+    ->get('/school-admin', fn () => Inertia::render('school-admin/Dashboard'))
     ->name('school-admin.dashboard');
-    Route::middleware(['auth', 'teacher'])
-    ->get('/teacher', function () {
-        return \Inertia\Inertia::render('teacher/Dashboard');
+Route::middleware(['auth', 'teacher'])
+    ->get('/teacher', function (Request $request, TeacherDirectory $directory) {
+        return Inertia::render('teacher/Dashboard', ['placements' => $directory->personalPlacements($request->user())]);
     })
     ->name('teacher.dashboard');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->get('/admin/schools', [SchoolController::class, 'index'])
     ->name('admin.schools.index');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->get('/admin/schools/create', [SchoolController::class, 'create'])
     ->name('admin.schools.create');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->post('/admin/schools', [SchoolController::class, 'store'])
     ->name('admin.schools.store');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->get('/admin/schools/{school}/edit', [SchoolController::class, 'edit'])
     ->name('admin.schools.edit');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->put('/admin/schools/{school}', [SchoolController::class, 'update'])
     ->name('admin.schools.update');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->patch('/admin/schools/{school}/status', [SchoolController::class, 'toggleStatus'])
     ->name('admin.schools.toggle-status');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->get('/admin/schools/{school}/teachers', [SchoolController::class, 'teachers'])
     ->name('admin.schools.teachers');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->post('/admin/schools/{school}/teachers', [SchoolController::class, 'attachTeacher'])
     ->name('admin.schools.teachers.attach');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->delete(
         '/admin/schools/{school}/teachers/{teacher}',
         [SchoolController::class, 'detachTeacher']
     )
     ->name('admin.schools.teachers.detach');
-    Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'admin'])
     ->patch(
         '/admin/schools/{school}/teachers/{teacher}/primary',
         [SchoolController::class, 'makeTeacherPrimary']
     )
     ->name('admin.schools.teachers.primary');
-    Route::middleware(['auth', 'teacher'])
+Route::middleware(['auth', 'teacher'])
     ->get('/teacher/profile', [ProfileController::class, 'edit'])
     ->name('teacher.profile.edit');
-    Route::middleware(['auth', 'teacher'])
+Route::middleware(['auth', 'teacher'])
     ->put('/teacher/profile', [ProfileController::class, 'update'])
     ->name('teacher.profile.update');

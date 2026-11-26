@@ -1,0 +1,395 @@
+<?php
+
+use App\Models\School;
+use App\Models\User;
+use App\Services\CollegeQualificationReference;
+use App\Services\EducationWorkloadImport;
+use App\Services\SpreadsheetExport;
+use App\Services\SpreadsheetImport;
+use App\UserRole;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+beforeEach(function () {
+    $this->withoutVite();
+    config(['pedbase.education_catalog_enabled' => true, 'inertia.ssr.enabled' => false]);
+    $this->admin = User::factory()->create(['role' => UserRole::ADMIN]);
+    $this->teacher = User::factory()->create(['role' => UserRole::TEACHER]);
+    $this->region = DB::table('education_regions')->insertGetId(['code' => 'FIXTURE-R', 'name' => 'Test region']);
+    $this->area = DB::table('education_areas')->insertGetId(['code' => 'FIXTURE-A', 'name' => 'Test area', 'region_id' => $this->region]);
+    $this->org = function (string $type, string $bin): int {
+        $id = DB::table('education_organization_types')->where('code', $type)->value('id');
+        $id ??= DB::table('education_organization_types')->insertGetId(['code' => $type, 'name' => $type]);
+
+        return DB::table('education_organizations')->insertGetId([
+            'type_id' => $id, 'area_id' => $this->area, 'bin' => $bin, 'name' => "Test $type", 'locality' => 'Test locality',
+        ]);
+    };
+    $this->makeFile = function (string $type, array $rows): UploadedFile {
+        $headers = array_values(app(EducationWorkloadImport::class)->columns($type));
+        $path = app(SpreadsheetExport::class)->xlsx([$headers, ...$rows]);
+        try {
+            return UploadedFile::fake()->createWithContent('workload.xlsx', file_get_contents($path));
+        } finally {
+            unlink($path);
+        }
+    };
+    $this->sample = fn (string $bin, string $placement = 'secondary', string $area = 'FIXTURE-A') => [$bin, $area, $this->teacher->username, 'Test position', $placement, '2026', '4.25', 'academic_hour', 'week'];
+});
+
+it('searches approved workplaces across pages and keeps role statistics distinct', function () {
+    $first = ($this->org)('school', '000000000601');
+    $second = ($this->org)('school', '000000000602');
+    $otherType = ($this->org)('college', '000000000603');
+    $otherArea = ($this->org)('school', '000000000604');
+    $area = DB::table('education_areas')->insertGetId(['code' => 'OTHER-A', 'name' => 'Other area', 'region_id' => $this->region]);
+    DB::table('education_organizations')->where('id', $otherArea)->update(['area_id' => $area]);
+    DB::table('education_organizations')->where('id', $first)->update(['name' => 'Visible school']);
+    $schoolAdmin = User::factory()->create(['role' => UserRole::SCHOOL_ADMIN]);
+    $methodist = User::factory()->create(['role' => UserRole::METHODIST]);
+    DB::table('education_organization_admins')->insert(['user_id' => $schoolAdmin->id, 'organization_id' => $first]);
+    DB::table('education_methodist_grants')->insert([
+        'user_id' => $methodist->id, 'area_id' => $this->area,
+        'type_id' => DB::table('education_organizations')->where('id', $first)->value('type_id'),
+    ]);
+
+    $teachers = User::factory()->count(21)->sequence(fn ($sequence) => [
+        'name' => sprintf('Synthetic teacher %02d', $sequence->index),
+        'role' => UserRole::TEACHER,
+    ])->create();
+    $employment = fn (User $teacher, int $org, string $position = 'Synthetic position') => DB::table('education_employments')->insertGetId([
+        'user_id' => $teacher->id, 'organization_id' => $org, 'position_title' => $position, 'status' => 'active',
+    ]);
+    foreach ($teachers as $teacher) {
+        $employment($teacher, $first);
+    }
+    $employment($teachers->last(), $second);
+    $employment($teachers->last(), $otherType, 'Out of scope position');
+    $employment($this->teacher, $otherType);
+    $employment($this->teacher, $otherArea);
+    DB::table('education_primary_workplaces')->insert(['user_id' => $teachers->last()->id, 'organization_id' => $first]);
+    $record = DB::table('education_employments')->where('user_id', $teachers->last()->id)->where('organization_id', $first)->value('id');
+    DB::table('education_workloads')->insert([
+        'employment_id' => $record, 'academic_year' => 2026, 'amount' => 4, 'unit' => 'academic_hour',
+        'period' => 'week', 'position_title' => 'Synthetic position', 'was_primary' => true,
+        'details' => json_encode(['subject' => 'Synthetic mathematics']), 'identity' => str_repeat('a', 64),
+    ]);
+    $teachers->last()->attestations()->create(['category' => 'Synthetic category', 'awarded_on' => '2025-01-01']);
+
+    $this->actingAs($methodist)->get(route('organization.teachers', ['name' => 'Synthetic teacher', 'page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page->where('teachers.total', 21)->has('teachers.data', 1)
+            ->where('teachers.data.0.id', $teachers->last()->id)
+            ->where('teachers.prev_page_url', fn (string $url) => str_contains($url, 'name=Synthetic+teacher') || str_contains($url, 'name=Synthetic%20teacher')));
+    $this->get(route('organization.teachers', [
+        'organization' => 'Visible school', 'subject' => 'mathematics', 'position' => 'Synthetic', 'category' => 'Synthetic category',
+    ]))->assertInertia(fn (Assert $page) => $page->where('teachers.total', 1)
+        ->where('teachers.data.0.id', $teachers->last()->id)->missing('teachers.data.0.email')->missing('teachers.data.0.iin'));
+    $this->get(route('organization.teachers', ['position' => 'Out of scope']))
+        ->assertInertia(fn (Assert $page) => $page->where('teachers.total', 0));
+    $this->get(route('organization.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('statistics', ['catalog' => true, 'organizations' => 2, 'teachers' => 21, 'primary' => 1, 'secondary' => 21]));
+    $this->actingAs($schoolAdmin)->get(route('organization.index'))->assertInertia(fn (Assert $page) => $page
+        ->where('statistics', ['catalog' => true, 'organizations' => 1, 'teachers' => 21, 'primary' => 1, 'secondary' => 20]));
+    $this->actingAs($this->admin)->get(route('admin.dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->where('analytics.placements', ['catalog' => true, 'organizations' => 4, 'teachers' => 22, 'primary' => 1, 'secondary' => 24]));
+    $this->actingAs($this->teacher)->get(route('organization.teachers'))->assertForbidden();
+    $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->where('placements', ['catalog' => true, 'primary' => 0, 'secondary' => 2]));
+});
+
+it('paginates the school management list and preserves its primary workplace flag', function () {
+    config(['pedbase.education_catalog_enabled' => false]);
+    $school = School::create(['name' => 'Synthetic school']);
+    $this->teacher->schools()->attach($school, ['is_primary' => true]);
+    $this->actingAs($this->admin)->get(route('admin.schools.teachers', [$school, 'name' => $this->teacher->name]))
+        ->assertInertia(fn (Assert $page) => $page->where('teacherCount', 1)
+            ->where('teachers.total', 1)->where('teachers.data.0.is_primary', true));
+    $this->get(route('organization.teachers', ['organization' => 'Synthetic school']))
+        ->assertInertia(fn (Assert $page) => $page->where('teachers.total', 1)
+            ->where('teachers.data.0.id', $this->teacher->id));
+});
+
+it('imports a type specific workbook after preview, protects confirmation and retains archived history', function (string $type, array $details) {
+    $bin = '000000000450';
+    $id = ($this->org)($type, $bin);
+    $this->actingAs($this->admin);
+    $this->get(route('education-organizations.template', ['type' => $type, 'workload' => 1]))
+        ->assertDownload("pedbase-education-$type-workload.xlsx");
+    $file = ($this->makeFile)($type, [[...($this->sample)($bin, 'primary'), ...$details]]);
+    $input = ['file' => $file, 'workload_type' => $type];
+    $token = $this->postJson(route('education-organizations.imports.preview'), $input)
+        ->assertOk()->assertJsonCount(0, 'rows.0.errors')->json('token');
+    expect($token)->toBeString();
+    $this->assertDatabaseCount('education_workloads', 0);
+    $this->postJson(route('education-organizations.imports.confirm'), array_replace($input, ['token' => $token, 'workload_type' => null]))
+        ->assertUnprocessable();
+    $this->postJson(route('education-organizations.imports.confirm'), $input + ['token' => $token])
+        ->assertOk()->assertJson(['created' => 1]);
+    $this->postJson(route('education-organizations.imports.confirm'), $input + ['token' => $token])->assertUnprocessable();
+    $this->assertDatabaseHas('education_primary_workplaces', ['user_id' => $this->teacher->id, 'organization_id' => $id]);
+    $this->assertDatabaseHas('audit_events', ['action' => 'spreadsheet.import.education_workloads']);
+    $this->patch(route('education-organizations.status', $id), ['status' => 'archived'])->assertRedirect();
+    $this->actingAs($this->teacher);
+    $this->get(route('education-organizations.reports.index'))->assertInertia(fn (Assert $page) => $page
+        ->component('reports/Catalog')->has('rows.data', 1)->where('rows.data.0.unit', 'academic_hour')
+        ->where('rows.data.0.period', 'week')->where('rows.data.0.teacher', $this->teacher->name)
+        ->where('rows.data.0.archived_at', fn ($value) => $value !== null));
+    $export = $this->get(route('education-organizations.reports.export', 'csv'))->assertOk();
+    expect($export->streamedContent())->toContain($this->teacher->name)->not->toContain($this->teacher->email);
+})->with([
+    'college' => ['college', ['01120100', 'Test specialty', '3W01120101', 'Test qualification', 'Test program', 'Test module', '']],
+    'preschool' => ['preschool', ['Test direction', 'Test age group', 'Test category']],
+    'supplementary' => ['supplementary', ['Test club', '', 'Test program', 'Test direction']],
+    'special' => ['special', ['Test program', 'Test direction']],
+]);
+
+it('rejects mixed area and primary workplace conflicts without partial writes', function () {
+    $type = 'special';
+    $bin1 = '000000000451';
+    $bin2 = '000000000452';
+    ($this->org)($type, $bin1);
+    ($this->org)($type, $bin2);
+    $this->actingAs($this->admin);
+    $first = [...($this->sample)($bin1, 'primary'), 'Test program', 'Test direction'];
+    $second = [...($this->sample)($bin2, 'primary'), 'Test program', 'Test direction'];
+    $invalid = [...($this->sample)($bin2, 'secondary', 'UNKNOWN'), 'Test program', 'Test direction'];
+    $this->postJson(route('education-organizations.imports.preview'), [
+        'file' => ($this->makeFile)($type, [$first, $second, $invalid]), 'workload_type' => $type,
+    ])->assertOk()->assertJsonCount(1, 'rows.1.errors')->assertJsonCount(1, 'rows.2.errors')->assertJsonPath('token', null);
+    $this->assertDatabaseCount('education_workloads', 0);
+    $this->assertDatabaseCount('education_employments', 0);
+});
+
+it('blocks conflicting primary workplaces across the legacy school and enabled catalog', function () {
+    $bin = '000000000457';
+    ($this->org)('special', $bin);
+    $school = School::query()->create(['name' => 'Test legacy school', 'is_active' => true]);
+    $this->teacher->setPrimarySchool($school);
+    $this->actingAs($this->admin);
+    $row = [...($this->sample)($bin, 'primary'), 'Test program', 'Test direction'];
+    $input = ['file' => ($this->makeFile)('special', [$row]), 'workload_type' => 'special'];
+    $this->postJson(route('education-organizations.imports.preview'), $input)
+        ->assertOk()->assertJsonCount(1, 'rows.0.errors')->assertJsonPath('token', null);
+    $this->teacher->schools()->detach($school);
+    $token = $this->postJson(route('education-organizations.imports.preview'), $input)->assertOk()->json('token');
+    $this->postJson(route('education-organizations.imports.confirm'), $input + ['token' => $token])->assertOk();
+    expect(fn () => $this->teacher->setPrimarySchool($school))->toThrow(HttpException::class);
+    $this->assertDatabaseCount('school_user', 0);
+});
+
+it('keeps amounts in separate unit and period groups and omits course document data from exports', function () {
+    $bin = '000000000456';
+    $id = ($this->org)('special', $bin);
+    $this->actingAs($this->admin);
+    $week = [...($this->sample)($bin), 'Test program', 'Test direction'];
+    $year = $week;
+    $year[8] = 'academic_year';
+    $clock = $week;
+    $clock[7] = 'clock_hour';
+    $file = ($this->makeFile)('special', [$week, $year, $clock]);
+    $input = ['file' => $file, 'workload_type' => 'special'];
+    $token = $this->postJson(route('education-organizations.imports.preview'), $input)->assertOk()->json('token');
+    $this->postJson(route('education-organizations.imports.confirm'), $input + ['token' => $token])->assertOk();
+    $this->get(route('education-organizations.reports.index', ['report' => 'workload_totals', 'organization_id' => $id]))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 3)
+            ->where('rows.data.0.period', 'academic_year')->where('rows.data.2.unit', 'clock_hour'));
+
+    $this->teacher->courses()->create([
+        'title' => 'Test course', 'provider' => 'Test provider', 'hours' => 12,
+        'started_on' => '2026-01-01', 'ended_on' => '2026-01-02', 'certificate_number' => 'PRIVATE-FIXTURE',
+        'certificate_path' => 'private/fixture.pdf',
+    ]);
+    $export = $this->get(route('education-organizations.reports.export', ['format' => 'csv', 'report' => 'courses', 'provider' => 'Test provider']))
+        ->assertOk()->streamedContent();
+    expect($export)->toContain('Test provider')->not->toContain('PRIVATE-FIXTURE')->not->toContain('private/fixture.pdf');
+    $xlsx = $this->get(route('education-organizations.reports.export', ['format' => 'xlsx', 'report' => 'courses']))
+        ->assertDownload('pedbase-catalog-courses.xlsx');
+    $path = $xlsx->baseResponse->getFile()->getPathname();
+    $zip = new ZipArchive;
+    try {
+        expect($zip->open($path))->toBeTrue();
+        expect($zip->getFromName('xl/worksheets/sheet1.xml'))->toContain('Test provider')->not->toContain('PRIVATE-FIXTURE');
+        $zip->close();
+    } finally {
+        unlink($path);
+    }
+});
+
+it('scopes administrators, methodists and teachers to permitted organizations and blocks non-admin imports', function () {
+    $id = ($this->org)('college', '000000000453');
+    $other = ($this->org)('preschool', '000000000454');
+    $manager = User::factory()->create(['role' => UserRole::SCHOOL_ADMIN]);
+    $methodist = User::factory()->create(['role' => UserRole::METHODIST]);
+    DB::table('education_organization_admins')->insert(['user_id' => $manager->id, 'organization_id' => $id]);
+    DB::table('education_methodist_grants')->insert([
+        'user_id' => $methodist->id, 'area_id' => $this->area,
+        'type_id' => DB::table('education_organization_types')->where('code', 'college')->value('id'),
+    ]);
+    $this->actingAs($manager);
+    $this->put(route('education-organizations.update', $id), ['name' => 'Renamed', 'locality' => 'Test', 'bin' => '000000000455'])->assertRedirect();
+    $this->assertDatabaseHas('education_organizations', ['id' => $id, 'name' => 'Renamed', 'bin' => '000000000453']);
+    $this->get(route('education-organizations.edit', $other))->assertForbidden();
+    foreach ([$manager, $methodist, $this->teacher] as $actor) {
+        $this->actingAs($actor);
+        $this->postJson(route('education-organizations.imports.preview'), [])->assertForbidden();
+        $this->get(route('education-organizations.reports.export', ['format' => 'xlsx', 'organization_id' => $other]))->assertForbidden();
+    }
+    $this->actingAs($methodist)->get(route('education-organizations.reports.index', ['organization_id' => $id]))->assertOk();
+    config(['pedbase.education_catalog_enabled' => false]);
+    $this->actingAs($this->admin)->get(route('education-organizations.reports.index'))->assertNotFound();
+});
+
+it('filters multiple college assignments and attestation history in reports and exports', function () {
+    $bin = '000000000457';
+    ($this->org)('college', $bin);
+    $this->actingAs($this->admin);
+    $base = [...($this->sample)($bin), '01120100', 'Test specialty', '3W01120101', 'Test qualification', 'Test program'];
+    $file = ($this->makeFile)('college', [
+        [...$base, 'Test module A', ''],
+        [...$base, 'Test module B', ''],
+        [...$base, '', 'Test subject'],
+    ]);
+    $input = ['file' => $file, 'workload_type' => 'college'];
+    $token = $this->postJson(route('education-organizations.imports.preview'), $input)->assertOk()->json('token');
+    $this->postJson(route('education-organizations.imports.confirm'), $input + ['token' => $token])->assertOk();
+    $this->assertDatabaseCount('education_workloads', 3);
+    $this->actingAs($this->teacher)->get(route('dossiers.show', $this->teacher))
+        ->assertInertia(fn (Assert $page) => $page->where('showCatalogEmployment', true));
+    $this->actingAs($this->admin)->get(route('dossiers.show', $this->teacher))
+        ->assertInertia(fn (Assert $page) => $page->where('showCatalogEmployment', false));
+
+    $this->get(route('education-organizations.reports.index', ['module' => 'Test module A', 'unit' => 'academic_hour', 'period' => 'week']))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 1));
+    $this->get(route('education-organizations.reports.index', ['module' => 'Test module A', 'subject' => 'Test subject']))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 0));
+    $csv = $this->get(route('education-organizations.reports.export', ['format' => 'csv', 'subject' => 'Test subject']))
+        ->assertOk()->streamedContent();
+    expect($csv)->toContain('Test subject', 'Мектепке дейінгі тәрбие және оқыту', 'Тәрбиешінің көмекшісі*')->not->toContain('Test module A');
+    $names = app(CollegeQualificationReference::class)->validate('07151200', '3W07151201');
+    expect($names['qualification'])->toContain('Қалыптаушы', 'Металдар мен қорытпаларды құюшы');
+
+    $this->teacher->attestations()->create(['category' => 'Test category', 'awarded_on' => '2025-09-01', 'valid_until' => '2030-09-01']);
+    $this->teacher->attestations()->create(['category' => 'Previous category', 'awarded_on' => '2021-09-01']);
+    $this->get(route('education-organizations.reports.index', [
+        'report' => 'categories', 'awarded_from' => '2025-01-01', 'awarded_until' => '2025-12-31',
+    ]))->assertInertia(fn (Assert $page) => $page->has('rows.data', 1)
+        ->where('rows.data.0.awarded_on', '2025-09-01')->where('rows.data.0.valid_until', '2030-09-01'));
+    $this->getJson(route('education-organizations.reports.index', [
+        'report' => 'categories', 'awarded_from' => '2025-01-01', 'awarded_until' => '2024-12-31',
+    ]))->assertUnprocessable()->assertJsonValidationErrors('awarded_until');
+});
+
+it('rejects a qualification belonging to a different official specialty', function () {
+    $bin = '000000000458';
+    ($this->org)('college', $bin);
+    $file = ($this->makeFile)('college', [[
+        ...($this->sample)($bin), '01140100', 'Test specialty', '3W01120101', 'Test qualification',
+        'Test program', 'Test module', '',
+    ]]);
+    $this->actingAs($this->admin)->postJson(route('education-organizations.imports.preview'), [
+        'file' => $file, 'workload_type' => 'college',
+    ])->assertOk()->assertJsonPath('token', null)->assertJsonCount(1, 'rows.0.errors');
+    $this->assertDatabaseCount('education_workloads', 0);
+});
+
+it('counts distinct educators in area and type and exports achievement metadata only', function () {
+    $one = ($this->org)('college', '000000000465');
+    $two = ($this->org)('college', '000000000466');
+    foreach ([$one, $two] as $organization) {
+        DB::table('education_employments')->insert(['user_id' => $this->teacher->id, 'organization_id' => $organization, 'status' => 'active']);
+    }
+    $this->teacher->teacherProfile()->create(['education_level' => 'Synthetic education', 'total_experience_months' => 48]);
+    $this->teacher->achievements()->create(['title' => 'Synthetic award', 'issuer' => 'Synthetic issuer',
+        'awarded_on' => '2025-01-01', 'level' => 'Synthetic level', 'description' => 'PRIVATE-DESCRIPTION', 'document_path' => 'PRIVATE-PATH']);
+    $index = route('education-organizations.reports.index', ['report' => 'workforce', 'region' => 'FIXTURE-R']);
+    $this->actingAs($this->admin)->get($index)->assertInertia(fn (Assert $page) => $page->has('rows.data', 1)->where('rows.data.0.teachers', 1));
+    $this->get(route('education-organizations.reports.index', ['report' => 'profiles']))
+        ->assertInertia(fn (Assert $page) => $page->has('rows.data', 2)->where('rows.data.0.total_experience_months', 48));
+    $export = route('education-organizations.reports.export', ['format' => 'csv', 'report' => 'achievements', 'organization_id' => $one]);
+    expect($this->get($export)->assertOk()->streamedContent())->toContain('Synthetic award')->not->toContain('PRIVATE-DESCRIPTION', 'PRIVATE-PATH');
+    $methodist = User::factory()->create(['role' => UserRole::METHODIST]);
+    $dossier = route('dossiers.show', $this->teacher);
+    $this->actingAs($methodist)->get($dossier)->assertForbidden();
+    DB::table('education_methodist_grants')->insert(['user_id' => $methodist->id, 'area_id' => $this->area,
+        'type_id' => DB::table('education_organization_types')->where('code', 'college')->value('id')]);
+    $this->get($dossier)->assertInertia(fn (Assert $page) => $page->has('achievements.data', 1)
+        ->missing('achievements.data.0.document_path')->missing('achievements.data.0.description'));
+    $this->actingAs(User::factory()->create(['role' => UserRole::TEACHER]))->get($export)->assertForbidden();
+});
+
+it('registers catalog teacher accounts only after admin confirmation and allows email password setup', function () {
+    $college = ($this->org)('college', '000000000461');
+    $preschool = ($this->org)('preschool', '000000000462');
+    $rows = [
+        ['Synthetic Teacher A', 'catalog_teacher_a', 'catalog-a@example.invalid', '000000000461', 'college', 'FIXTURE-A', 'Test position A'],
+        ['Synthetic Teacher B', 'catalog_teacher_b', 'catalog-b@example.invalid', '000000000462', 'preschool', 'FIXTURE-A', 'Test position B'],
+        ['Synthetic Teacher A', 'catalog_teacher_a', 'catalog-a@example.invalid', '000000000462', 'preschool', 'FIXTURE-A', 'Second position', 'secondary'],
+    ];
+    $workbook = function (array $rows): UploadedFile {
+        $path = app(SpreadsheetExport::class)->xlsx([array_values(SpreadsheetImport::CATALOG_TEACHER_COLUMNS), ...$rows]);
+        try {
+            return UploadedFile::fake()->createWithContent('teacher-accounts.xlsx', file_get_contents($path));
+        } finally {
+            unlink($path);
+        }
+    };
+    $preview = route('education-organizations.imports.preview');
+    $confirm = route('education-organizations.imports.confirm');
+    $template = route('education-organizations.template', 'teacher-accounts');
+    $input = ['file' => $workbook($rows), 'teacher_accounts' => 1];
+    foreach ([UserRole::SCHOOL_ADMIN, UserRole::METHODIST, UserRole::TEACHER] as $role) {
+        $this->actingAs(User::factory()->create(['role' => $role]));
+        $this->get($template)->assertForbidden();
+        $this->postJson($preview, $input)->assertForbidden();
+        $this->postJson($confirm, $input + ['token' => 'untrusted'])->assertForbidden();
+    }
+    $this->actingAs($this->admin)->get($template)->assertDownload('pedbase-education-teacher-accounts.xlsx');
+    $this->postJson($confirm, $input)->assertUnprocessable();
+    $duplicate = $rows[1];
+    $duplicate[1] = 'CATALOG_TEACHER_A';
+    $duplicate[4] = 'college';
+    $this->postJson($preview, ['file' => $workbook([$rows[0], $duplicate]), 'teacher_accounts' => 1])
+        ->assertOk()->assertJsonPath('token', null)->assertJsonCount(2, 'rows.1.errors');
+    $response = $this->postJson($preview, $input)->assertOk()->assertJsonCount(0, 'rows.0.errors');
+    expect($response->getContent())->not->toContain($rows[0][0], $rows[0][1], $rows[0][2]);
+    $token = $response->json('token');
+    $this->assertDatabaseMissing('users', ['username' => $rows[0][1]]);
+    $this->postJson($confirm, ['file' => $input['file'], 'token' => $token])->assertUnprocessable();
+    $this->postJson($confirm, $input + ['token' => $token])->assertOk()->assertExactJson(['created' => 2]);
+    foreach ([$college, $preschool] as $index => $organization) {
+        $user = User::where('username', $rows[$index][1])->firstOrFail();
+        expect($user->role)->toBe(UserRole::TEACHER);
+        expect((bool) $user->catalog_onboarding_pending)->toBeTrue();
+        $this->assertDatabaseHas('education_employments', ['user_id' => $user->id, 'organization_id' => $organization, 'position_title' => $rows[$index][6]]);
+        $this->assertDatabaseHas('education_primary_workplaces', ['user_id' => $user->id, 'organization_id' => $organization]);
+    }
+    $firstUser = User::where('username', 'catalog_teacher_a')->firstOrFail();
+    $this->assertDatabaseHas('education_employments', ['user_id' => $firstUser->id, 'organization_id' => $preschool]);
+    $this->assertDatabaseMissing('education_primary_workplaces', ['user_id' => $firstUser->id, 'organization_id' => $preschool]);
+    $this->assertDatabaseHas('audit_events', ['action' => 'spreadsheet.import.education_teachers', 'subject_id' => 0]);
+    $this->postJson($confirm, $input + ['token' => $token])->assertUnprocessable();
+    config(['pedbase.education_catalog_enabled' => false]);
+    $this->postJson($preview, $input)->assertNotFound();
+
+    auth()->guard()->logout();
+    Notification::fake();
+    config(['mail.default' => 'log']);
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasErrors('email');
+    Notification::assertNothingSent();
+    expect((bool) $user->fresh()->catalog_onboarding_pending)->toBeTrue();
+    $this->travel(61)->seconds();
+    config(['mail.default' => 'array']);
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+    $notification = Notification::sent($user, ResetPassword::class)->sole();
+    $password = 'Synthetic-test-passphrase-28';
+    $reset = ['email' => $user->email, 'token' => $notification->token, 'password' => $password, 'password_confirmation' => $password];
+    $this->post(route('password.update'), $reset)->assertSessionHasNoErrors();
+    expect(Hash::check($password, $user->fresh()->password))->toBeTrue();
+    expect((bool) $user->fresh()->catalog_onboarding_pending)->toBeFalse();
+    $this->post(route('password.update'), $reset)->assertSessionHasErrors('email');
+});

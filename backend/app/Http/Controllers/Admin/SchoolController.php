@@ -58,7 +58,7 @@ class SchoolController extends Controller
 
         return redirect()
             ->route('admin.schools.index')
-            ->with('success', 'Мектеп сәтті қосылды.');
+            ->with('success', __('Мектеп сәтті қосылды.'));
     }
 
     public function edit(School $school): Response
@@ -97,7 +97,7 @@ class SchoolController extends Controller
 
         return redirect()
             ->route('admin.schools.index')
-            ->with('success', 'Мектеп мәліметтері сәтті жаңартылды.');
+            ->with('success', __('Мектеп мәліметтері сәтті жаңартылды.'));
     }
 
     public function toggleStatus(School $school): RedirectResponse
@@ -116,8 +116,9 @@ class SchoolController extends Controller
             );
     }
 
-    public function teachers(School $school): Response
+    public function teachers(Request $request, School $school): Response
     {
+        $filters = $request->validate(['name' => ['nullable', 'string', 'max:150']]);
         $attachedTeacherIds = $school->users()
             ->where('role', UserRole::TEACHER->value)
             ->pluck('users.id');
@@ -128,6 +129,8 @@ class SchoolController extends Controller
                 'name',
                 'short_name',
             ]),
+            'filters' => ['name' => $filters['name'] ?? ''],
+            'teacherCount' => $attachedTeacherIds->count(),
 
             'teachers' => $school->users()
                 ->where('role', UserRole::TEACHER->value)
@@ -137,9 +140,10 @@ class SchoolController extends Controller
                     'users.username',
                     'users.email'
                 )
-                ->orderBy('users.name')
-                ->get()
-                ->map(fn ($teacher) => [
+                ->when(isset($filters['name']), fn ($query) => $query->whereLike('users.name', '%'.$filters['name'].'%'))
+                ->orderBy('users.name')->orderBy('users.id')
+                ->paginate(20)->appends($filters)
+                ->through(fn ($teacher) => [
                     'id' => $teacher->id,
                     'name' => $teacher->name,
                     'username' => $teacher->username,
@@ -178,83 +182,87 @@ class SchoolController extends Controller
         ]);
 
         return $school->getConnection()->transaction(function () use ($school, $validated) {
-        $teacher = User::query()->lockForUpdate()->findOrFail($validated['teacher_id']);
+            $teacher = User::query()->lockForUpdate()->findOrFail($validated['teacher_id']);
 
-        if ($teacher->role !== UserRole::TEACHER) {
-            abort(422, 'Таңдалған пайдаланушы педагог емес.');
-        }
+            if ($teacher->role !== UserRole::TEACHER) {
+                abort(422, 'Таңдалған пайдаланушы педагог емес.');
+            }
 
-        if ($school->users()->whereKey($teacher->id)->exists()) {
+            if ($school->users()->whereKey($teacher->id)->exists()) {
+                return redirect()
+                    ->route('admin.schools.teachers', $school)
+                    ->with(
+                        'success',
+                        'Бұл педагог мектепке бұрыннан тіркелген.'
+                    );
+            }
+
+            $school->users()->attach($teacher->id, [
+                'is_primary' => false,
+            ]);
+
+            if ($validated['is_primary']) {
+                $teacher->setPrimarySchool($school);
+            }
+
             return redirect()
                 ->route('admin.schools.teachers', $school)
-                ->with(
-                    'success',
-                    'Бұл педагог мектепке бұрыннан тіркелген.'
-                );
-        }
-
-        $school->users()->attach($teacher->id, [
-            'is_primary' => false,
-        ]);
-
-        if ($validated['is_primary']) {
-            $teacher->setPrimarySchool($school);
-        }
-
-        return redirect()
-            ->route('admin.schools.teachers', $school)
-            ->with('success', 'Педагог мектепке сәтті тіркелді.');
+                ->with('success', __('Педагог мектепке сәтті тіркелді.'));
         }, 3);
-    }public function detachTeacher(
-    School $school,
-    User $teacher
-): RedirectResponse {
-    return $school->getConnection()->transaction(function () use ($school, $teacher) {
-    User::query()->whereKey($teacher->id)->lockForUpdate()->firstOrFail();
-    $schoolTeacher = $school->users()
-        ->whereKey($teacher->id)
-        ->first();
-
-    if (! $schoolTeacher) {
-        return redirect()
-            ->route('admin.schools.teachers', $school)
-            ->with('success', 'Педагог бұл мектепке тіркелмеген.');
     }
 
-    if ((bool) $schoolTeacher->pivot->is_primary) {
-        return redirect()
-            ->route('admin.schools.teachers', $school)
-            ->with(
-                'success',
-                'Негізгі жұмыс орнын ажырату үшін алдымен басқа мектепті негізгі жұмыс орны ретінде белгілеңіз.'
-            );
+    public function detachTeacher(
+        School $school,
+        User $teacher
+    ): RedirectResponse {
+        return $school->getConnection()->transaction(function () use ($school, $teacher) {
+            User::query()->whereKey($teacher->id)->lockForUpdate()->firstOrFail();
+            $schoolTeacher = $school->users()
+                ->whereKey($teacher->id)
+                ->first();
+
+            if (! $schoolTeacher) {
+                return redirect()
+                    ->route('admin.schools.teachers', $school)
+                    ->with('success', __('Педагог бұл мектепке тіркелмеген.'));
+            }
+
+            if ((bool) $schoolTeacher->pivot->is_primary) {
+                return redirect()
+                    ->route('admin.schools.teachers', $school)
+                    ->with(
+                        'success',
+                        'Негізгі жұмыс орнын ажырату үшін алдымен басқа мектепті негізгі жұмыс орны ретінде белгілеңіз.'
+                    );
+            }
+
+            $school->users()->detach($teacher->id);
+
+            return redirect()
+                ->route('admin.schools.teachers', $school)
+                ->with('success', __('Педагог мектептен сәтті ажыратылды.'));
+        }, 3);
     }
 
-    $school->users()->detach($teacher->id);
+    public function makeTeacherPrimary(
+        School $school,
+        User $teacher
+    ): RedirectResponse {
+        return $school->getConnection()->transaction(function () use ($school, $teacher) {
+            $teacher = User::query()->lockForUpdate()->findOrFail($teacher->id);
+            if ($teacher->role !== UserRole::TEACHER) {
+                abort(422, 'Таңдалған пайдаланушы педагог емес.');
+            }
 
-    return redirect()
-        ->route('admin.schools.teachers', $school)
-        ->with('success', 'Педагог мектептен сәтті ажыратылды.');
-    }, 3);
-}public function makeTeacherPrimary(
-    School $school,
-    User $teacher
-): RedirectResponse {
-    return $school->getConnection()->transaction(function () use ($school, $teacher) {
-    $teacher = User::query()->lockForUpdate()->findOrFail($teacher->id);
-    if ($teacher->role !== UserRole::TEACHER) {
-        abort(422, 'Таңдалған пайдаланушы педагог емес.');
+            if (! $school->users()->whereKey($teacher->id)->exists()) {
+                abort(422, __('Педагог бұл мектепке тіркелмеген.'));
+            }
+
+            $teacher->setPrimarySchool($school);
+
+            return redirect()
+                ->route('admin.schools.teachers', $school)
+                ->with('success', __('Мектеп педагогтің негізгі жұмыс орны ретінде белгіленді.'));
+        }, 3);
     }
-
-    if (! $school->users()->whereKey($teacher->id)->exists()) {
-        abort(422, 'Педагог бұл мектепке тіркелмеген.');
-    }
-
-    $teacher->setPrimarySchool($school);
-
-    return redirect()
-        ->route('admin.schools.teachers', $school)
-        ->with('success', 'Мектеп педагогтің негізгі жұмыс орны ретінде белгіленді.');
-    }, 3);
-}
 }

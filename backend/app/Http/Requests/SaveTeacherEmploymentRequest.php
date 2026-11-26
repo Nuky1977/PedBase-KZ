@@ -24,9 +24,9 @@ class SaveTeacherEmploymentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'position_title.required' => 'Лауазымды енгізіңіз.',
-            'position_title.max' => 'Лауазым 150 таңбадан аспауы керек.',
-            'status.*' => 'Еңбек күйін таңдаңыз.',
+            'position_title.required' => __('Лауазымды енгізіңіз.'),
+            'position_title.max' => __('Лауазым 150 таңбадан аспауы керек.'),
+            'status.*' => __('Еңбек күйін таңдаңыз.'),
         ];
     }
 }

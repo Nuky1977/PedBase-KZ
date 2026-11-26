@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { HTMLAttributes, Ref } from "vue"
+import { router } from '@inertiajs/vue3'
 import { defaultDocument, useEventListener, useMediaQuery, useVModel } from "@vueuse/core"
 import { TooltipProvider } from "reka-ui"
-import { computed, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref } from "vue"
 import { cn } from "@/lib/utils"
 import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./utils"
 
@@ -19,8 +20,15 @@ const emits = defineEmits<{
   "update:open": [open: boolean]
 }>()
 
-const isMobile = useMediaQuery("(max-width: 768px)")
+const isMobile = useMediaQuery("(width < 48rem)")
 const openMobile = ref(false)
+let removeNavigateListener: (() => void) | undefined
+
+onMounted(() => {
+  removeNavigateListener = router.on('navigate', () => setOpenMobile(false))
+})
+
+onUnmounted(() => removeNavigateListener?.())
 
 const open = useVModel(props, "open", emits, {
   defaultValue: props.defaultOpen ?? false,

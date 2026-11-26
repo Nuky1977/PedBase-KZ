@@ -10,6 +10,10 @@ class SaveDossierRecordRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        if ($this->route('kind') === 'achievements') {
+            abort_unless(config('pedbase.education_catalog_enabled'), 404);
+        }
+
         return app(TeacherDossierPolicy::class)->manage($this->user(), $this->route('teacher'));
     }
 
@@ -38,21 +42,29 @@ class SaveDossierRecordRequest extends FormRequest
                 'awarded_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
                 'valid_until' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:awarded_on'],
             ],
+            'achievements' => [
+                'title' => ['required', 'string', 'max:200'],
+                'issuer' => ['required', 'string', 'max:200'],
+                'awarded_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+                'level' => ['required', 'string', 'max:100'],
+                'description' => ['nullable', 'string', 'max:2000'],
+                'certificate' => ['nullable', File::types(['pdf'])->max('5mb')],
+            ],
         };
     }
 
     public function messages(): array
     {
         return [
-            'required' => 'Бұл өрісті толтырыңыз.',
-            'string' => 'Мәтін енгізіңіз.',
-            'integer' => 'Бүтін сан енгізіңіз.',
-            'between' => 'Мән :min және :max арасында болуы керек.',
-            'max' => 'Мән берілген шектен аспауы керек.',
-            'date_format' => 'Дұрыс күнді таңдаңыз.',
-            'after_or_equal' => 'Күн алдыңғы көрсетілген күннен ерте болмауы керек.',
-            'before_or_equal' => 'Күн бүгіннен кеш болмауы керек.',
-            'certificate.*' => 'Көлемі 5 МБ-тан аспайтын PDF файлын таңдаңыз.',
+            'required' => __('Бұл өрісті толтырыңыз.'),
+            'string' => __('Мәтін енгізіңіз.'),
+            'integer' => __('Бүтін сан енгізіңіз.'),
+            'between' => __('Мән :min және :max арасында болуы керек.'),
+            'max' => __('Мән берілген шектен аспауы керек.'),
+            'date_format' => __('Дұрыс күнді таңдаңыз.'),
+            'after_or_equal' => __('Күн алдыңғы көрсетілген күннен ерте болмауы керек.'),
+            'before_or_equal' => __('Күн бүгіннен кеш болмауы керек.'),
+            'certificate.*' => __('Көлемі 5 МБ-тан аспайтын PDF файлын таңдаңыз.'),
         ];
     }
 }
