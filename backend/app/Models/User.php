@@ -90,7 +90,7 @@ class User extends Authenticatable
 
     public function sendPasswordResetNotification($token): void
     {
-        if (! $this->catalog_onboarding_pending || $this->catalogPasswordDeliveryEnabled()) {
+        if ($this->catalogPasswordDeliveryEnabled()) {
             $this->notify(new ResetPassword($token));
         }
     }

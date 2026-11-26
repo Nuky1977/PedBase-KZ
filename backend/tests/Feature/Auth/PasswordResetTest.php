@@ -25,6 +25,16 @@ test('reset password link can be requested', function () {
     Notification::assertSentTo($user, ResetPassword::class);
 });
 
+test('the log mailer never receives a password reset notification for an existing account', function () {
+    Notification::fake();
+    config(['mail.default' => 'log']);
+    $user = User::factory()->create(['catalog_onboarding_pending' => false]);
+
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+
+    Notification::assertNothingSent();
+});
+
 test('reset password screen can be rendered', function () {
     Notification::fake();
 
@@ -75,4 +85,24 @@ test('password cannot be reset with invalid token', function () {
     ]);
 
     $response->assertSessionHasErrors('email');
+});
+
+test('an expired password setup token cannot change the account password', function () {
+    Notification::fake();
+    $user = User::factory()->create(['catalog_onboarding_pending' => true]);
+    $originalHash = $user->getAuthPassword();
+
+    $this->post(route('password.email'), ['email' => $user->email])->assertSessionHasNoErrors();
+    $notification = Notification::sent($user, ResetPassword::class)->sole();
+    $this->travel(config('auth.passwords.users.expire') + 1)->minutes();
+
+    $this->post(route('password.update'), [
+        'token' => $notification->token,
+        'email' => $user->email,
+        'password' => 'synthetic-test-password',
+        'password_confirmation' => 'synthetic-test-password',
+    ])->assertSessionHasErrors('email');
+
+    expect($user->fresh()->getAuthPassword())->toBe($originalHash);
+    expect((bool) $user->fresh()->catalog_onboarding_pending)->toBeTrue();
 });
